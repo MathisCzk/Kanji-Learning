@@ -13,10 +13,11 @@
    changer à chaque modification : la changer force simplement un vidage
    complet, utile en cas de problème. */
 
-const VERSION = "kanji-n5-v5";
+const VERSION = "kanji-n5-v6";
 const FICHIERS = [
   "./",
   "./index.html",
+  "./kanji.js",
   "./traces.js",
   "./manifest.json",
   "./icone-192.png",
@@ -27,7 +28,7 @@ const FICHIERS = [
 
 /* Seuls ces fichiers déclenchent un rechargement quand ils changent :
    inutile de recharger la page parce qu'une icône a été retouchée. */
-const SURVEILLES = /(^|\/)(index\.html|traces\.js)?$/;
+const SURVEILLES = /(^|\/)(index\.html|kanji\.js|traces\.js)?$/;
 
 const signature = r =>
   r.headers.get("etag") || r.headers.get("last-modified") || r.headers.get("content-length") || "";
