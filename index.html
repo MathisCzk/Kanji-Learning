@@ -323,6 +323,7 @@ const TYPES = [
    ================================================================ */
 
 const CLE = "kanji_n5_v1";
+const VERSION_APP = "2026-09-04";   // à changer en même temps que VERSION dans sw.js
 let memoire = null;
 
 const Stock = {
@@ -632,7 +633,8 @@ function vueReglages(){
       <button class="b2" id="rz-srs">Effacer la progression</button>
       <button class="b2" id="rz-tout">Tout effacer</button>
     </div>
-    <div class="note">« Effacer la progression » conserve votre sélection de kanji et vos ajouts personnels.</div>`;
+    <div class="note">« Effacer la progression » conserve votre sélection de kanji et vos ajouts personnels.</div>
+    <div class="meta centre" style="margin-top:22px">Version ${VERSION_APP}${navigator.serviceWorker && navigator.serviceWorker.controller ? " · hors ligne actif" : ""}</div>`;
 
   app.innerHTML = html;
   $("#nb").onchange = e=>{ S.nouveauxParJour = Math.max(0, Math.min(40, +e.target.value||0)); enregistrer(); };
@@ -1193,7 +1195,17 @@ barreNav.addEventListener("click", e=>{
   vue = b.dataset.vue; session = null; rendre();
 });
 
+/* Mise à jour automatique.
+   Le navigateur revérifie sw.js à chaque lancement. Si le fichier a changé,
+   le nouveau service worker s'installe, vide l'ancien cache et prend la main :
+   « controllerchange » se déclenche alors et on recharge la page.
+   On ne recharge pas si aucun service worker ne contrôlait déjà la page
+   (première installation), ni au milieu d'une session de révision. */
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  const dejaControle = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{
+    if(dejaControle && !session) location.reload();
+  });
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 
