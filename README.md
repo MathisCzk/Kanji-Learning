@@ -7,8 +7,9 @@ Toutes les données restent sur le téléphone : rien n'est envoyé nulle part.
 
 | Fichier | Rôle |
 |---|---|
-| `index.html` | L'application : données, moteur SRS, reconnaissance de tracé, interface (55 ko) |
-| `traces.js` | Tracés KanjiVG des 110 kanji — 687 traits ordonnés (51 ko) |
+| `index.html` | L'application : moteur SRS, reconnaissance de tracé, interface (63 ko) |
+| `kanji.js` | Les 613 kanji N5/N4/N3 — sens, lectures, mots d'exemple (63 ko) |
+| `traces.js` | Tracés KanjiVG — 5 456 traits ordonnés (388 ko) |
 | `manifest.json` | Métadonnées d'installation sur l'écran d'accueil |
 | `sw.js` | Service worker — met l'appli en cache pour l'usage hors ligne |
 | `icone-*.png` | Icônes de l'écran d'accueil |
@@ -43,12 +44,32 @@ et fonctionne dans le métro sans réseau.
 
 ### Sélection des kanji
 
-Onglet **Mes kanji** : 110 kanji répartis en 11 leçons. Touchez une leçon pour
-la déplier, puis activez les kanji un par un ou la leçon entière. Seuls les kanji
-activés entrent dans les exercices.
+Onglet **Mes kanji** : **613 kanji** répartis en trois niveaux.
+
+| Niveau | Kanji | Groupes | Organisation |
+|---|---|---|---|
+| N5 | 110 | 11 | par thème (chiffres, famille, verbes…) |
+| N4 | 137 | 7 | par fréquence d'usage décroissante |
+| N3 | 366 | 19 | par fréquence d'usage décroissante |
+
+Le N5 est classé par thème parce que c'est le niveau où l'on construit du
+vocabulaire utilisable tout de suite. Au-delà, l'ordre thématique perd son
+intérêt : les groupes N4 et N3 suivent la **fréquence réelle dans la presse
+japonaise**, ce qui est le meilleur ordre d'apprentissage pour de la lecture.
+Le groupe 1 du N4 contient donc les kanji que vous croiserez le plus souvent.
+
+Les 30 kanji que les listes JLPT classent en N4/N3 mais qui figuraient déjà
+dans les leçons N5 thématiques (会, 力, 口, 新, 空…) n'apparaissent qu'une fois,
+dans le N5.
+
+Chaque niveau et chaque groupe se déplie d'une touche, et porte deux boutons
+**＋** et **−** qui activent ou retirent tout son contenu d'un coup. Seuls les
+kanji activés entrent dans les exercices.
 
 Un formulaire en bas de page permet d'ajouter n'importe quel kanji rencontré
-ailleurs — panneaux d'usine, konbini, documents de travail. Format des mots :
+ailleurs. Vos ajouts forment un quatrième niveau, « Mes kanji ».
+
+Format des mots pour un ajout manuel :
 `安全|あんぜん|sécurité;品質|ひんしつ|qualité`
 
 ### Les cinq exercices
@@ -76,8 +97,9 @@ Le verdict n'apparaît qu'une fois les deux choix faits, pour que le premier
 n'oriente pas le second. La carte n'est réussie que si les deux réponses sont
 justes.
 
-Dix kanji n'ont pas de 訓'yomi courant (百, 万, 曜, 毎, 週, 午, 校, 気, 電, 駅) :
-l'exercice ne pose alors qu'une question.
+Soixante kanji n'ont pas de 訓'yomi courant (百, 万, 曜, 毎, 週, 午, 校, 気, 電,
+駅, 議, 制, 期…) et un seul n'a pas de 音'yomi (込) : l'exercice ne pose alors
+qu'une question.
 
 ### Correction du tracé
 
@@ -106,7 +128,7 @@ La note SRS est suggérée automatiquement d'après le nombre d'erreurs
 ou *Indulgent*. L'ordre des traits est toujours vérifié — le réglage ne joue que
 sur la tolérance de forme et de placement.
 
-Mesures sur les 687 traits, tous kanji confondus :
+Mesures sur les 5 456 traits des 613 kanji :
 
 | Scénario | Résultat attendu | Taux |
 |---|---|---|
@@ -116,10 +138,10 @@ Mesures sur les 687 traits, tous kanji confondus :
 | Tracé 15 % plus petit | accepté | 100 % |
 | Tracé penché de 10° | accepté | 100 % |
 | Trait dessiné à l'envers | refusé | 99,6 % |
-| Trait voisin joué à la place | refusé | 97,4 % |
+| Trait voisin joué à la place | refusé | 97,1 % |
 | Tracé décalé de 30 px | refusé | 100 % |
 
-Les 2,6 % de traits voisins acceptés à tort concernent les kanji à traits
+Les 2,9 % de traits voisins acceptés à tort concernent les kanji à traits
 quasi identiques et rapprochés (三, 目, 川). Passer en *Strict* les rattrape,
 au prix d'un peu de tolérance sur le reste.
 
@@ -154,7 +176,7 @@ réimportable. À faire au moins une fois par mois.
 Tout est dans `index.html`, en JavaScript sans framework, commenté et découpé
 en sept sections :
 
-1. Données (les 110 kanji)
+1. Constantes et types d'exercices (les kanji sont dans `kanji.js`)
 2. Stockage local
 3. État de l'application
 4. Moteur SRS
@@ -169,10 +191,12 @@ le trait de l'utilisateur subit le même traitement. Cinq mesures décident :
 distance de départ, distance d'arrivée, distance moyenne point à point,
 cosinus des directions, rapport des longueurs. Les seuils sont dans `SEUILS`.
 
-Pour ajouter des kanji en masse, éditez la constante `LECONS` en section 1.
-Pensez à ajouter les tracés correspondants dans `traces.js` (fichiers
-`kanji/<codepoint>.svg` du dépôt KanjiVG), sinon l'exercice d'écriture bascule
-en auto-évaluation pour ces kanji.
+Pour ajouter des kanji en masse, éditez `kanji.js` : un tableau `NIVEAUX`,
+chaque niveau contenant des groupes, chaque groupe une liste d'entrées
+`[kanji, sens, on'yomi, kun'yomi, "mot|lecture|sens;…"]`. Pensez à ajouter les
+tracés correspondants dans `traces.js` (fichiers `kanji/<codepoint>.svg` du
+dépôt KanjiVG), sinon l'exercice d'écriture bascule en auto-évaluation pour ces
+kanji.
 Format d'une entrée :
 
 ```js
@@ -215,22 +239,32 @@ données du site dans les réglages du navigateur, réinstallez, réimportez.
 
 ## Crédits et licence
 
-Les données de tracé proviennent de **KanjiVG**, projet d'Ulrich Apel,
-distribué sous licence **Creative Commons BY-SA 3.0** :
-https://kanjivg.tagaini.net/
+Trois sources de données, toutes en **Creative Commons BY-SA** :
 
-La licence impose deux choses si vous publiez l'application :
+| Source | Apport | Licence |
+|---|---|---|
+| [KanjiVG](https://kanjivg.tagaini.net/) — Ulrich Apel | tracés et ordre des traits | CC BY-SA 3.0 |
+| [KANJIDIC2](https://www.edrdg.org/wiki/KANJIDIC_Project.html) — EDRDG | sens français, lectures | CC BY-SA 4.0 |
+| [OpenJLPT](https://github.com/evanclan/OpenJLPT) | listes N5–N3, vocabulaire | CC BY-SA 4.0 |
 
-1. **Citer KanjiVG** — l'en-tête de `traces.js` le fait, laissez-le en place ;
-   ajoutez la mention dans l'interface si vous diffusez l'appli largement.
-2. **Partage à l'identique** — toute redistribution des données de tracé,
-   modifiées ou non, doit rester sous CC BY-SA 3.0.
+Les définitions françaises viennent de KANJIDIC2, qui couvre les 613 kanji.
+Les gloses françaises des mots d'exemple ont été traduites à partir des
+définitions anglaises d'OpenJLPT.
 
-Pour un usage personnel, rien à faire. Le reste du code est à vous.
+Ce que la licence impose si vous publiez l'application :
+
+1. **Citer les trois sources** — les en-têtes de `kanji.js` et `traces.js` le
+   font, laissez-les en place ; ajoutez la mention dans l'interface si vous
+   diffusez l'appli largement.
+2. **Partage à l'identique** — toute redistribution de ces données, modifiées
+   ou non, doit rester sous CC BY-SA.
+
+Pour un usage personnel, rien à faire. Le code de l'application est à vous.
 
 ## Pistes d'évolution
 
 - Saisie de la lecture au clavier kana plutôt qu'en QCM
 - Statistiques de rétention par kanji pour repérer les points faibles
-- Extension aux niveaux N4 et N3, même format de données
+- Extension aux niveaux N2 et N1, même format de données
+- Deuxième mot d'exemple pour les kanji N4 et N3
 - Synchronisation entre appareils via un simple fichier dans un cloud
