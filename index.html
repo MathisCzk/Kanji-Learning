@@ -111,11 +111,18 @@ button{font-family:inherit;font-size:15px;cursor:pointer;border-radius:2px}
 .note-b.encore{border-color:var(--shu);color:var(--shu)}
 
 /* ---- listes / sélection ---- */
-.lecon{border:1px solid var(--regle);background:var(--carte);margin-bottom:8px}
-.lecon-tete{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}
-.lecon-tete b{font-weight:500;font-size:14px}
-.lecon-tete .meta{margin-left:auto}
-.puces{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 12px}
+.niveau{border:1px solid var(--regle);background:var(--carte);margin-bottom:10px}
+.niv-tete{display:flex;align-items:center;gap:9px;padding:13px 12px;cursor:pointer}
+.niv-tete b{font-weight:500;font-size:16px;letter-spacing:.02em}
+.groupe{border-top:1px solid var(--regle)}
+.grp-tete{display:flex;align-items:center;gap:9px;padding:10px 12px 10px 18px;cursor:pointer}
+.grp-tete b{font-weight:400;font-size:14px}
+.chev{color:var(--doux);font-size:11px;width:10px;flex:0 0 10px}
+.cpt{margin-left:auto;font-variant-numeric:tabular-nums;font-size:12px;color:var(--doux);white-space:nowrap}
+.mini{border:1px solid var(--regle);background:none;color:var(--doux);width:30px;height:30px;
+      flex:0 0 30px;font-size:15px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
+.mini:hover{border-color:var(--indigo);color:var(--indigo)}
+.puces{display:flex;flex-wrap:wrap;gap:5px;padding:2px 12px 12px 18px}
 .puce{
   border:1px solid var(--regle);background:none;color:var(--doux);
   width:42px;height:42px;font-size:22px;display:flex;align-items:center;justify-content:center;
@@ -167,6 +174,7 @@ nav button.on{color:var(--indigo)}
 <div id="app"></div>
 <nav id="nav"></nav>
 
+<script src="kanji.js"></script>
 <script src="traces.js"></script>
 <script>
 "use strict";
@@ -175,140 +183,6 @@ nav button.on{color:var(--indigo)}
    1. DONNÉES — 110 kanji N5
    format : [kanji, sens, on'yomi, kun'yomi, "mot|kana|sens;mot|kana|sens"]
    ================================================================ */
-
-const LECONS = [
-["Les chiffres","1 à 10",[
-["一","un","イチ・イツ","ひと.つ","一つ|ひとつ|un (objet);一人|ひとり|seul, une personne"],
-["二","deux","ニ","ふた.つ","二つ|ふたつ|deux (objets);二人|ふたり|deux personnes"],
-["三","trois","サン","みっ.つ・み","三つ|みっつ|trois (objets);三月|さんがつ|mars"],
-["四","quatre","シ","よん・よっ.つ・よ","四つ|よっつ|quatre (objets);四時|よじ|4 heures"],
-["五","cinq","ゴ","いつ.つ","五つ|いつつ|cinq (objets);五月|ごがつ|mai"],
-["六","six","ロク","むっ.つ","六つ|むっつ|six (objets);六本|ろっぽん|six objets longs"],
-["七","sept","シチ","なな.つ","七つ|ななつ|sept (objets);七時|しちじ|7 heures"],
-["八","huit","ハチ","やっ.つ","八つ|やっつ|huit (objets);八百屋|やおや|primeur"],
-["九","neuf","キュウ・ク","ここの.つ","九つ|ここのつ|neuf (objets);九時|くじ|9 heures"],
-["十","dix","ジュウ・ジッ","とお","十|じゅう|dix;十日|とおか|le 10 du mois"]]],
-
-["Nombres et mesures","argent, heures",[
-["百","cent","ヒャク","—","百|ひゃく|cent;三百|さんびゃく|trois cents"],
-["千","mille","セン","ち","千円|せんえん|mille yens;三千|さんぜん|trois mille"],
-["万","dix mille","マン・バン","—","一万円|いちまんえん|10 000 yens;万年筆|まんねんひつ|stylo-plume"],
-["円","yen, rond","エン","まる.い","千円|せんえん|mille yens;百円玉|ひゃくえんだま|pièce de 100 yens"],
-["年","année","ネン","とし","今年|ことし|cette année;来年|らいねん|l'an prochain"],
-["時","heure, moment","ジ","とき","何時|なんじ|quelle heure;時計|とけい|montre, horloge"],
-["分","minute, diviser","フン・プン・ブン","わ.かる・わ.ける","五分|ごふん|cinq minutes;分かる|わかる|comprendre"],
-["半","moitié","ハン","なか.ば","半分|はんぶん|la moitié;二時半|にじはん|2 h 30"]]],
-
-["Semaine et éléments","les sept jours",[
-["日","soleil, jour","ニチ・ジツ","ひ・び・か","日曜日|にちようび|dimanche;毎日|まいにち|tous les jours"],
-["月","lune, mois","ゲツ・ガツ","つき","月曜日|げつようび|lundi;今月|こんげつ|ce mois-ci"],
-["火","feu","カ","ひ","火曜日|かようび|mardi;花火|はなび|feu d'artifice"],
-["水","eau","スイ","みず","水曜日|すいようび|mercredi;水|みず|eau"],
-["木","arbre, bois","モク・ボク","き・こ","木曜日|もくようび|jeudi;木|き|arbre"],
-["金","or, argent","キン・コン","かね","金曜日|きんようび|vendredi;お金|おかね|argent"],
-["土","terre, sol","ド・ト","つち","土曜日|どようび|samedi;土地|とち|terrain"],
-["曜","jour de la semaine","ヨウ","—","曜日|ようび|jour de la semaine;何曜日|なんようび|quel jour"]]],
-
-["Le temps qui passe","avant, après, chaque",[
-["今","maintenant","コン・キン","いま","今|いま|maintenant;今日|きょう|aujourd'hui"],
-["何","quoi, combien","カ","なに・なん","何|なに|quoi;何人|なんにん|combien de personnes"],
-["毎","chaque","マイ","—","毎日|まいにち|tous les jours;毎週|まいしゅう|chaque semaine"],
-["週","semaine","シュウ","—","今週|こんしゅう|cette semaine;週末|しゅうまつ|week-end"],
-["間","intervalle, entre","カン・ケン","あいだ・ま","時間|じかん|temps, heure;人間|にんげん|être humain"],
-["午","midi","ゴ","—","午前|ごぜん|matin, a.m.;午後|ごご|après-midi, p.m."],
-["前","avant, devant","ゼン","まえ","名前|なまえ|nom;駅前|えきまえ|devant la gare"],
-["後","après, derrière","ゴ・コウ","あと・うし.ろ・のち","午後|ごご|après-midi;後ろ|うしろ|derrière"]]],
-
-["Position et direction","les panneaux de gare",[
-["上","haut, sur","ジョウ","うえ・あ.げる・のぼ.る","上|うえ|au-dessus;上手|じょうず|doué"],
-["下","bas, sous","カ・ゲ","した・さ.げる・くだ.さい","下|した|en dessous;下手|へた|mauvais en"],
-["中","milieu, dedans","チュウ","なか","中|なか|l'intérieur;中国|ちゅうごく|la Chine"],
-["外","extérieur","ガイ・ゲ","そと・ほか","外|そと|dehors;外国人|がいこくじん|étranger"],
-["右","droite","ウ・ユウ","みぎ","右|みぎ|droite;右手|みぎて|main droite"],
-["左","gauche","サ","ひだり","左|ひだり|gauche;左側|ひだりがわ|côté gauche"],
-["東","est","トウ","ひがし","東京|とうきょう|Tokyo;東口|ひがしぐち|sortie est"],
-["西","ouest","セイ・サイ","にし","西口|にしぐち|sortie ouest;関西|かんさい|région du Kansai"],
-["南","sud","ナン","みなみ","南口|みなみぐち|sortie sud;南米|なんべい|Amérique du Sud"],
-["北","nord","ホク","きた","北口|きたぐち|sortie nord;北海道|ほっかいどう|Hokkaidō"]]],
-
-["Les personnes","famille et entourage",[
-["人","personne","ジン・ニン","ひと","日本人|にほんじん|Japonais;三人|さんにん|trois personnes"],
-["男","homme","ダン・ナン","おとこ","男|おとこ|homme;男の子|おとこのこ|garçon"],
-["女","femme","ジョ・ニョ","おんな・め","女|おんな|femme;女性|じょせい|femme (formel)"],
-["子","enfant","シ・ス","こ","子供|こども|enfant;椅子|いす|chaise"],
-["父","père","フ","ちち・とう","父|ちち|mon père;お父さん|おとうさん|papa, votre père"],
-["母","mère","ボ","はは・かあ","母|はは|ma mère;お母さん|おかあさん|maman, votre mère"],
-["友","ami","ユウ","とも","友達|ともだち|ami;友人|ゆうじん|ami (formel)"],
-["先","avant, précédent","セン","さき","先生|せんせい|professeur;先週|せんしゅう|la semaine dernière"],
-["生","vie, naître, cru","セイ・ショウ","い.きる・う.まれる・なま","学生|がくせい|étudiant;生ビール|なまビール|bière pression"],
-["名","nom","メイ・ミョウ","な","名前|なまえ|nom;有名|ゆうめい|célèbre"]]],
-
-["Adjectifs","décrire les choses",[
-["大","grand","ダイ・タイ","おお.きい","大きい|おおきい|grand;大人|おとな|adulte"],
-["小","petit","ショウ","ちい.さい・こ・お","小さい|ちいさい|petit;小学校|しょうがっこう|école primaire"],
-["高","haut, cher","コウ","たか.い","高い|たかい|haut, cher;高校|こうこう|lycée"],
-["安","bon marché, paisible","アン","やす.い","安い|やすい|pas cher;安全|あんぜん|sécurité"],
-["新","nouveau","シン","あたら.しい","新しい|あたらしい|nouveau;新聞|しんぶん|journal"],
-["古","vieux (objet)","コ","ふる.い","古い|ふるい|vieux;中古|ちゅうこ|d'occasion"],
-["長","long, chef","チョウ","なが.い","長い|ながい|long;社長|しゃちょう|PDG"],
-["白","blanc","ハク・ビャク","しろ.い","白い|しろい|blanc;面白い|おもしろい|intéressant, drôle"],
-["多","nombreux","タ","おお.い","多い|おおい|nombreux;多分|たぶん|probablement"],
-["少","peu","ショウ","すこ.し・すく.ない","少し|すこし|un peu;少ない|すくない|peu nombreux"]]],
-
-["École et langue","lire, écrire, parler",[
-["学","étudier","ガク","まな.ぶ","学生|がくせい|étudiant;大学|だいがく|université"],
-["校","école","コウ","—","学校|がっこう|école;高校|こうこう|lycée"],
-["語","langue, mot","ゴ","かた.る","日本語|にほんご|japonais;フランス語|フランスご|français"],
-["話","parler, histoire","ワ","はな.す・はなし","話す|はなす|parler;電話|でんわ|téléphone"],
-["読","lire","ドク","よ.む","読む|よむ|lire;読書|どくしょ|lecture"],
-["書","écrire","ショ","か.く","書く|かく|écrire;辞書|じしょ|dictionnaire"],
-["見","voir","ケン","み.る・み.せる","見る|みる|voir, regarder;見せる|みせる|montrer"],
-["聞","écouter, demander","ブン・モン","き.く・きこ.える","聞く|きく|écouter, demander;新聞|しんぶん|journal"],
-["言","dire, parole","ゲン・ゴン","い.う・こと","言う|いう|dire;言葉|ことば|mot, langue"],
-["国","pays","コク","くに","外国|がいこく|étranger (pays);中国|ちゅうごく|Chine"],
-["本","livre, origine","ホン","もと","本|ほん|livre;日本|にほん|Japon"],
-["字","caractère","ジ","あざ","漢字|かんじ|kanji;ローマ字|ローマじ|rōmaji"],
-["文","texte, phrase","ブン・モン","ふみ","作文|さくぶん|rédaction;文化|ぶんか|culture"]]],
-
-["Verbes du quotidien","aller, manger, sortir",[
-["行","aller","コウ・ギョウ","い.く・おこな.う","行く|いく|aller;銀行|ぎんこう|banque"],
-["来","venir","ライ","く.る・き.ます","来る|くる|venir;来週|らいしゅう|la semaine prochaine"],
-["帰","rentrer","キ","かえ.る","帰る|かえる|rentrer;帰国|きこく|retour au pays"],
-["食","manger","ショク","た.べる・く.う","食べる|たべる|manger;食事|しょくじ|repas"],
-["飲","boire","イン","の.む","飲む|のむ|boire;飲み物|のみもの|boisson"],
-["買","acheter","バイ","か.う","買う|かう|acheter;買い物|かいもの|courses"],
-["出","sortir","シュツ","で.る・だ.す","出口|でぐち|sortie;出発|しゅっぱつ|départ"],
-["入","entrer","ニュウ","はい.る・い.れる","入口|いりぐち|entrée;入る|はいる|entrer"],
-["立","se tenir debout","リツ","た.つ","立つ|たつ|se lever;立入禁止|たちいりきんし|entrée interdite"],
-["休","se reposer","キュウ","やす.む","休む|やすむ|se reposer;休み|やすみ|pause, congé"],
-["会","rencontrer","カイ","あ.う","会う|あう|rencontrer;会社|かいしゃ|entreprise"]]],
-
-["Nature et ville","autour de vous",[
-["山","montagne","サン","やま","山|やま|montagne;富士山|ふじさん|mont Fuji"],
-["川","rivière","セン","かわ","川|かわ|rivière;川崎|かわさき|Kawasaki"],
-["田","rizière","デン","た・だ","田中|たなか|Tanaka (nom);山田|やまだ|Yamada (nom)"],
-["花","fleur","カ","はな","花|はな|fleur;花見|はなみ|contemplation des fleurs"],
-["天","ciel","テン","あま","天気|てんき|temps (météo);天ぷら|てんぷら|tempura"],
-["気","esprit, air","キ・ケ","—","元気|げんき|en forme;気持ち|きもち|sentiment"],
-["雨","pluie","ウ","あめ","雨|あめ|pluie;大雨|おおあめ|forte pluie"],
-["空","ciel, vide","クウ","そら・あ.く・から","空|そら|ciel;空港|くうこう|aéroport"],
-["電","électricité","デン","—","電車|でんしゃ|train;電気|でんき|électricité, lumière"],
-["車","voiture","シャ","くるま","車|くるま|voiture;自転車|じてんしゃ|vélo"],
-["駅","gare","エキ","—","駅|えき|gare;駅前|えきまえ|devant la gare"],
-["社","société, sanctuaire","シャ","やしろ","会社|かいしゃ|entreprise;神社|じんじゃ|sanctuaire"],
-["店","magasin","テン","みせ","店|みせ|magasin;店員|てんいん|vendeur"],
-["道","chemin, voie","ドウ","みち","道|みち|chemin;北海道|ほっかいどう|Hokkaidō"],
-["魚","poisson","ギョ","さかな・うお","魚|さかな|poisson;魚屋|さかなや|poissonnerie"],
-["犬","chien","ケン","いぬ","犬|いぬ|chien;子犬|こいぬ|chiot"]]],
-
-["Corps et force","bonus N5/N4",[
-["目","œil","モク","め","目|め|œil;目的|もくてき|but"],
-["口","bouche","コウ","くち・ぐち","口|くち|bouche;人口|じんこう|population"],
-["耳","oreille","ジ","みみ","耳|みみ|oreille;耳鼻科|じびか|ORL"],
-["手","main","シュ","て","手|て|main;切手|きって|timbre"],
-["足","pied, suffire","ソク","あし・た.りる","足|あし|pied, jambe;足りる|たりる|suffire"],
-["力","force","リョク・リキ","ちから","力|ちから|force;協力|きょうりょく|coopération"]]]
-];
 
 const TYPES = [
   {id:"sens",    nom:"Retrouver le sens",       desc:"漢字 → sens"},
@@ -323,7 +197,7 @@ const TYPES = [
    ================================================================ */
 
 const CLE = "kanji_n5_v1";
-const VERSION_APP = "2026-09-04b";   // à changer en même temps que VERSION dans sw.js
+const VERSION_APP = "2026-09-04c";   // à changer en même temps que VERSION dans sw.js
 let memoire = null;
 
 const Stock = {
@@ -365,27 +239,32 @@ function enregistrer(){ persistant = Stock.ecrire(S) || persistant; }
 
 /* index des kanji ------------------------------------------------ */
 function construireIndex(){
-  const idx = {}, groupes = [];
-  LECONS.forEach((l,i)=>{
-    const liste = l[2].map(k=>{
-      const c = {k:k[0], sens:k[1], on:k[2], kun:k[3],
-        mots:k[4].split(";").map(m=>m.split("|")), lecon:i};
-      idx[c.k] = c; return c;
+  const idx = {}, niveaux = [];
+  NIVEAUX.forEach(n=>{
+    const groupes = n.groupes.map((g,gi)=>{
+      const liste = g.kanji.map(k=>{
+        const c = {k:k[0], sens:k[1], on:k[2], kun:k[3], niv:n.id,
+                   mots:(k[4]||"").split(";").filter(Boolean).map(m=>m.split("|"))};
+        idx[c.k] = c; return c;
+      });
+      return {id:n.id+"-"+gi, titre:g.titre, sous:g.sous, liste};
     });
-    groupes.push({titre:l[0], sous:l[1], liste, id:i});
+    niveaux.push({id:n.id, nom:n.nom, sous:n.sous, groupes});
   });
   if(S.perso.length){
     const liste = S.perso.map(p=>{
-      const c = {k:p.k, sens:p.sens, on:p.on||"—", kun:p.kun||"—",
-        mots:(p.mots||"").split(";").filter(Boolean).map(m=>m.split("|")), lecon:99, perso:true};
+      const c = {k:p.k, sens:p.sens, on:p.on||"—", kun:p.kun||"—", niv:"PERSO", perso:true,
+                 mots:(p.mots||"").split(";").filter(Boolean).map(m=>m.split("|"))};
       idx[c.k] = c; return c;
     });
-    groupes.push({titre:"Mes kanji", sous:"ajoutés à la main", liste, id:99});
+    niveaux.push({id:"PERSO", nom:"Mes kanji", sous:"ajoutés à la main",
+                  groupes:[{id:"PERSO-0", titre:"Mes ajouts", sous:"", liste}]});
   }
-  return {idx, groupes};
+  return {idx, niveaux};
 }
-let {idx:IDX, groupes:GROUPES} = construireIndex();
-function rafraichirIndex(){ const r = construireIndex(); IDX = r.idx; GROUPES = r.groupes; }
+let {idx:IDX, niveaux:NIV} = construireIndex();
+function rafraichirIndex(){ const r = construireIndex(); IDX = r.idx; NIV = r.niveaux; }
+const groupeParId = id => NIV.flatMap(n=>n.groupes).find(g=>g.id === id);
 
 const actifs = () => Object.keys(S.actifs).filter(k=>S.actifs[k] && IDX[k]);
 const typesActifs = () => TYPES.filter(t=>S.types[t.id]).map(t=>t.id);
@@ -455,11 +334,15 @@ function nav(){
   barreNav.style.display = session ? "none" : "flex";
 }
 
+let garderScroll = false;
 function rendre(){
-  window.scrollTo(0,0);
-  if(session){ vueSession(); nav(); return; }
+  const y = window.scrollY;
+  if(session){ vueSession(); nav(); garderScroll = false; window.scrollTo(0,0); return; }
   ({accueil:vueAccueil, kanji:vueKanji, stats:vueStats, reglages:vueReglages}[vue])();
   nav();
+  /* déplier un menu ne doit pas renvoyer en haut de page */
+  if(garderScroll){ window.scrollTo(0, y); garderScroll = false; }
+  else window.scrollTo(0, 0);
 }
 
 /* ---- accueil ---- */
@@ -494,29 +377,46 @@ function vueAccueil(){
 }
 
 /* ---- sélection des kanji ---- */
-let ouverts = {};
+let ouvertsNiv = {}, ouvertsGrp = {};
+
 function vueKanji(){
+  const tot = Object.keys(IDX).length;
   let html = entete();
   html += `<div class="rangee" style="margin-bottom:14px">
     <button class="b2" id="tout">Tout activer</button>
     <button class="b2" id="rien">Tout désactiver</button>
-    <span class="meta" style="margin-left:auto">${actifs().length} / ${Object.keys(IDX).length}</span>
+    <span class="cpt">${actifs().length} / ${tot}</span>
   </div>`;
 
-  html += GROUPES.map(g=>{
-    const on = g.liste.filter(c=>S.actifs[c.k]).length;
-    const ac = g.liste.filter(c=>acquis(S.fiches[c.k+"|sens"])).length;
-    return `<div class="lecon">
-      <div class="lecon-tete" data-groupe="${g.id}">
-        <b>${g.id===99?"":g.id+1+". "}${esc(g.titre)}</b>
-        ${ac===g.liste.length?'<span class="sceau jp">済</span>':""}
-        <span class="meta">${on}/${g.liste.length}</span>
+  html += NIV.map(n=>{
+    const liste = n.groupes.flatMap(g=>g.liste);
+    const on = liste.filter(c=>S.actifs[c.k]).length;
+    const ouv = ouvertsNiv[n.id];
+    return `<div class="niveau">
+      <div class="niv-tete" data-niv="${n.id}">
+        <span class="chev">${ouv?"▾":"▸"}</span>
+        <b>${esc(n.nom)}</b>
+        <span class="cpt" data-cpt-niv="${n.id}">${on}/${liste.length}</span>
+        <button class="mini" data-add="niv:${n.id}" title="Tout ajouter">＋</button>
+        <button class="mini" data-del="niv:${n.id}" title="Tout retirer">−</button>
       </div>
-      <div class="jauge"><div style="width:${on/g.liste.length*100}%"></div></div>
-      ${ouverts[g.id] ? `<div class="puces">
-        ${g.liste.map(c=>`<button class="puce jp ${S.actifs[c.k]?"on":""}" data-k="${c.k}" title="${esc(c.sens)}">${c.k}</button>`).join("")}
-        <button class="b2" data-lecon="${g.id}" style="width:auto;height:42px">${on===g.liste.length?"Retirer la leçon":"Activer la leçon"}</button>
-      </div>` : ""}
+      <div class="jauge"><div data-jauge-niv="${n.id}" style="width:${on/liste.length*100}%"></div></div>
+      ${!ouv ? "" : n.groupes.map(g=>{
+        const gon = g.liste.filter(c=>S.actifs[c.k]).length;
+        const gouv = ouvertsGrp[g.id];
+        return `<div class="groupe">
+          <div class="grp-tete" data-grp="${g.id}">
+            <span class="chev">${gouv?"▾":"▸"}</span>
+            <b>${esc(g.titre)}</b>
+            <span class="cpt" data-cpt-grp="${g.id}">${gon}/${g.liste.length}</span>
+            <button class="mini" data-add="grp:${g.id}" title="Ajouter le groupe">＋</button>
+            <button class="mini" data-del="grp:${g.id}" title="Retirer le groupe">−</button>
+          </div>
+          ${!gouv ? "" : `<div class="puces">${g.liste.map(c=>
+            `<button class="puce jp ${S.actifs[c.k]?"on":""}" data-k="${c.k}" data-grp-de="${g.id}" data-niv-de="${n.id}" title="${esc(c.sens)}">${c.k}</button>`
+          ).join("")}</div>`}
+        </div>`;
+      }).join("")}
     </div>`;
   }).join("");
 
@@ -533,26 +433,66 @@ function vueKanji(){
 
   app.innerHTML = html;
 
-  $("#tout").onclick = ()=>{ Object.keys(IDX).forEach(k=>S.actifs[k]=true); enregistrer(); rendre(); };
-  $("#rien").onclick = ()=>{ S.actifs = {}; enregistrer(); rendre(); };
-  app.querySelectorAll("[data-groupe]").forEach(e=>e.onclick = ()=>{
-    const id = +e.dataset.groupe; ouverts[id] = !ouverts[id]; rendre();
+  /* met à jour les compteurs sans tout reconstruire */
+  function majCompteurs(){
+    NIV.forEach(n=>{
+      const liste = n.groupes.flatMap(g=>g.liste);
+      const on = liste.filter(c=>S.actifs[c.k]).length;
+      const e = app.querySelector(`[data-cpt-niv="${n.id}"]`);
+      if(e) e.textContent = `${on}/${liste.length}`;
+      const j = app.querySelector(`[data-jauge-niv="${n.id}"]`);
+      if(j) j.style.width = (on/liste.length*100)+"%";
+      n.groupes.forEach(g=>{
+        const gon = g.liste.filter(c=>S.actifs[c.k]).length;
+        const ge = app.querySelector(`[data-cpt-grp="${g.id}"]`);
+        if(ge) ge.textContent = `${gon}/${g.liste.length}`;
+      });
+    });
+    app.querySelector(".rangee .cpt").textContent = `${actifs().length} / ${Object.keys(IDX).length}`;
+    nav();
+  }
+
+  const redessiner = ()=>{ garderScroll = true; rendre(); };
+
+  $("#tout").onclick = ()=>{ Object.keys(IDX).forEach(k=>S.actifs[k]=true); enregistrer(); redessiner(); };
+  $("#rien").onclick = ()=>{ S.actifs = {}; enregistrer(); redessiner(); };
+
+  app.querySelectorAll("[data-niv]").forEach(e=>e.onclick = ev=>{
+    if(ev.target.closest(".mini")) return;
+    ouvertsNiv[e.dataset.niv] = !ouvertsNiv[e.dataset.niv]; redessiner();
   });
+  app.querySelectorAll("[data-grp]").forEach(e=>e.onclick = ev=>{
+    if(ev.target.closest(".mini")) return;
+    ouvertsGrp[e.dataset.grp] = !ouvertsGrp[e.dataset.grp]; redessiner();
+  });
+
+  /* boutons ＋ et − de niveau et de groupe */
+  function appliquer(cible, valeur){
+    const [type, id] = cible.split(":");
+    const liste = type === "niv"
+      ? NIV.find(n=>n.id===id).groupes.flatMap(g=>g.liste)
+      : groupeParId(id).liste;
+    liste.forEach(c=>{ if(valeur) S.actifs[c.k] = true; else delete S.actifs[c.k]; });
+    enregistrer(); redessiner();
+  }
+  app.querySelectorAll("[data-add]").forEach(b=>b.onclick = ev=>{ ev.stopPropagation(); appliquer(b.dataset.add, true); });
+  app.querySelectorAll("[data-del]").forEach(b=>b.onclick = ev=>{ ev.stopPropagation(); appliquer(b.dataset.del, false); });
+
+  /* une puce bascule sur place : pas de reconstruction, donc pas de saut */
   app.querySelectorAll("[data-k]").forEach(e=>e.onclick = ()=>{
-    const k = e.dataset.k; S.actifs[k] = !S.actifs[k]; enregistrer(); rendre();
+    const k = e.dataset.k;
+    if(S.actifs[k]) delete S.actifs[k]; else S.actifs[k] = true;
+    e.classList.toggle("on", !!S.actifs[k]);
+    enregistrer(); majCompteurs();
   });
-  app.querySelectorAll("[data-lecon]").forEach(e=>e.onclick = ()=>{
-    const g = GROUPES.find(x=>x.id === +e.dataset.lecon);
-    const tout = g.liste.every(c=>S.actifs[c.k]);
-    g.liste.forEach(c=>{ if(tout) delete S.actifs[c.k]; else S.actifs[c.k] = true; });
-    enregistrer(); rendre();
-  });
+
   $("#ajouter").onclick = ()=>{
     const k = $("#p_k").value.trim(), s = $("#p_s").value.trim();
     if(!k || !s){ alert("Le kanji et son sens sont obligatoires."); return; }
     if(IDX[k]){ alert("Ce kanji est déjà dans la liste."); return; }
     S.perso.push({k, sens:s, on:$("#p_on").value.trim(), kun:$("#p_kun").value.trim(), mots:$("#p_m").value.trim()});
-    S.actifs[k] = true; enregistrer(); rafraichirIndex(); ouverts[99] = true; rendre();
+    S.actifs[k] = true; enregistrer(); rafraichirIndex();
+    ouvertsNiv["PERSO"] = ouvertsGrp["PERSO-0"] = true; redessiner();
   };
 }
 
