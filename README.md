@@ -182,6 +182,37 @@ Format d'une entrée :
 Après toute modification, incrémentez `VERSION` dans `sw.js` — sinon le service
 worker continue de servir l'ancienne version depuis le cache.
 
+## Mettre à jour l'application
+
+Rien n'est automatique côté dépôt : il faut téléverser les fichiers modifiés.
+GitHub Pages, lui, se reconstruit tout seul dans la minute qui suit.
+
+**La règle à retenir : dès que vous touchez à `index.html` ou `traces.js`,
+incrémentez `VERSION` dans `sw.js` et téléversez les deux.**
+
+Sans ce changement, le service worker installé sur le téléphone continue de
+servir l'ancienne version depuis son cache, et vous pouvez chercher longtemps
+pourquoi votre modification « ne passe pas ».
+
+Ce qui se produit ensuite, une fois les fichiers en ligne :
+
+1. Au lancement suivant, le navigateur revérifie `sw.js`.
+2. Le fichier a changé (`VERSION` différente) : le nouveau service worker
+   s'installe, supprime l'ancien cache et prend la main immédiatement.
+3. L'application détecte le changement de contrôleur et se recharge d'elle-même.
+
+Le rechargement est volontairement bloqué pendant une session de révision, pour
+ne pas l'interrompre : la mise à jour s'appliquera au lancement d'après.
+
+Le numéro de version est affiché en bas de l'écran Réglages — c'est le moyen
+le plus rapide de vérifier ce qui tourne réellement sur le téléphone. Pensez à
+faire évoluer `VERSION_APP` dans `index.html` en même temps que `VERSION` dans
+`sw.js`.
+
+En cas de blocage (rare, mais possible si un `sw.js` cassé a été mis en ligne) :
+supprimez l'icône de l'écran d'accueil, videz les données du site dans les
+réglages du navigateur, puis réinstallez. Exportez votre progression avant.
+
 ## Crédits et licence
 
 Les données de tracé proviennent de **KanjiVG**, projet d'Ulrich Apel,
