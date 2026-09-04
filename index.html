@@ -323,7 +323,7 @@ const TYPES = [
    ================================================================ */
 
 const CLE = "kanji_n5_v1";
-const VERSION_APP = "2026-09-04";   // à changer en même temps que VERSION dans sw.js
+const VERSION_APP = "2026-09-04b";   // à changer en même temps que VERSION dans sw.js
 let memoire = null;
 
 const Stock = {
@@ -1196,15 +1196,25 @@ barreNav.addEventListener("click", e=>{
 });
 
 /* Mise à jour automatique.
-   Le navigateur revérifie sw.js à chaque lancement. Si le fichier a changé,
-   le nouveau service worker s'installe, vide l'ancien cache et prend la main :
-   « controllerchange » se déclenche alors et on recharge la page.
-   On ne recharge pas si aucun service worker ne contrôlait déjà la page
-   (première installation), ni au milieu d'une session de révision. */
+   Deux déclencheurs :
+   — le service worker signale qu'un fichier surveillé a changé sur le serveur ;
+   — un nouveau service worker prend la main (sw.js lui-même a changé).
+   Dans les deux cas le nouveau contenu est déjà en cache : il suffit de
+   recharger. On ne recharge jamais pendant une session de révision, ni à la
+   toute première installation. */
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   const dejaControle = !!navigator.serviceWorker.controller;
+  let rechargement = false;
+  const recharger = ()=>{
+    if(rechargement || session) return;   // jamais au milieu d'une session
+    rechargement = true;
+    location.reload();
+  };
+  navigator.serviceWorker.addEventListener("message", e=>{
+    if(e.data && e.data.type === "maj") recharger();
+  });
   navigator.serviceWorker.addEventListener("controllerchange", ()=>{
-    if(dejaControle && !session) location.reload();
+    if(dejaControle) recharger();
   });
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
