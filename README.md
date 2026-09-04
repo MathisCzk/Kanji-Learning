@@ -57,12 +57,27 @@ ailleurs — panneaux d'usine, konbini, documents de travail. Format des mots :
 |---|---|---|
 | Retrouver le sens | 漢字 | QCM de sens |
 | Retrouver le kanji | sens | QCM de kanji |
-| Retrouver les lectures | 漢字 | QCM 音・訓 |
+| Retrouver les lectures | 漢字 | 音 **et** 訓 séparément — 4 + 4 options |
 | Lire un mot | mot en kanji | QCM de lecture kana |
 | Écrire le kanji | sens + lectures | tracé au doigt, **corrigé trait par trait** |
 
 Chaque exercice est activable ou désactivable indépendamment, depuis l'accueil
-ou les réglages.
+ou les réglages. Tous proposent un bouton **Je ne sais pas** qui dévoile la
+réponse et suggère la note *Encore*.
+
+### Lectures 音 et 訓 séparées
+
+Une seule liste mélangeant les deux lectures permet de deviner : on reconnaît
+le 音 et on en déduit le 訓. L'exercice pose donc **deux questions distinctes**
+sur le même kanji — quatre propositions de 音'yomi, quatre de 訓'yomi, tirées
+indépendamment.
+
+Le verdict n'apparaît qu'une fois les deux choix faits, pour que le premier
+n'oriente pas le second. La carte n'est réussie que si les deux réponses sont
+justes.
+
+Dix kanji n'ont pas de 訓'yomi courant (百, 万, 曜, 毎, 週, 午, 校, 気, 電, 駅) :
+l'exercice ne pose alors qu'une question.
 
 ### Correction du tracé
 
@@ -79,6 +94,10 @@ Les messages sont explicites plutôt que binaires :
 
 Au deuxième échec sur le même trait, le modèle s'anime dans le carreau.
 Le bouton *Montrer le trait* fait la même chose à la demande, au prix d'une erreur.
+
+*Je ne sais pas — montrer le kanji* dessine le caractère entier trait par trait,
+dans l'ordre, à une vitesse proportionnelle à la longueur de chaque trait. La
+carte est alors notée *Encore* et repasse dans la même session.
 
 La note SRS est suggérée automatiquement d'après le nombre d'erreurs
 (0 erreur → Bien, 1–2 → Difficile, 3+ → Encore), mais reste modifiable.
@@ -180,7 +199,6 @@ Pour un usage personnel, rien à faire. Le reste du code est à vous.
 
 ## Pistes d'évolution
 
-- Animation du tracé complet en démonstration avant le premier essai
 - Saisie de la lecture au clavier kana plutôt qu'en QCM
 - Statistiques de rétention par kanji pour repérer les points faibles
 - Extension aux niveaux N4 et N3, même format de données
