@@ -119,9 +119,12 @@ button{font-family:inherit;font-size:15px;cursor:pointer;border-radius:2px}
 .grp-tete b{font-weight:400;font-size:14px}
 .chev{color:var(--doux);font-size:11px;width:10px;flex:0 0 10px}
 .cpt{margin-left:auto;font-variant-numeric:tabular-nums;font-size:12px;color:var(--doux);white-space:nowrap}
-.mini{border:1px solid var(--regle);background:none;color:var(--doux);width:30px;height:30px;
-      flex:0 0 30px;font-size:15px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
-.mini:hover{border-color:var(--indigo);color:var(--indigo)}
+.coche{border:1.5px solid var(--regle);background:none;color:transparent;border-radius:3px;
+       width:24px;height:24px;flex:0 0 24px;padding:0;font-size:13px;line-height:1;
+       display:flex;align-items:center;justify-content:center}
+.coche:hover{border-color:var(--indigo)}
+.coche.tout{background:var(--indigo);border-color:var(--indigo);color:var(--papier)}
+.coche.partiel{border-color:var(--indigo);color:var(--indigo)}
 .puces{display:flex;flex-wrap:wrap;gap:5px;padding:2px 12px 12px 18px}
 .puce{
   border:1px solid var(--regle);background:none;color:var(--doux);
@@ -197,7 +200,7 @@ const TYPES = [
    ================================================================ */
 
 const CLE = "kanji_n5_v1";
-const VERSION_APP = "2026-09-04c";   // à changer en même temps que VERSION dans sw.js
+const VERSION_APP = "2026-09-04d";   // à changer en même temps que VERSION dans sw.js
 let memoire = null;
 
 const Stock = {
@@ -379,6 +382,13 @@ function vueAccueil(){
 /* ---- sélection des kanji ---- */
 let ouvertsNiv = {}, ouvertsGrp = {};
 
+/* case à trois états : cochée (tout), partielle, vide (rien) */
+const etatCoche = (on, total) => on === total ? "tout" : on > 0 ? "partiel" : "";
+const glypheCoche = (on, total) => on === total ? "✓" : on > 0 ? "–" : "";
+const titreCoche = (on, total) => on === total ? "Tout retirer" : "Tout ajouter";
+const coche = (cible, on, total) =>
+  `<button class="coche ${etatCoche(on,total)}" data-bascule="${cible}" title="${titreCoche(on,total)}">${glypheCoche(on,total)}</button>`;
+
 function vueKanji(){
   const tot = Object.keys(IDX).length;
   let html = entete();
@@ -397,8 +407,7 @@ function vueKanji(){
         <span class="chev">${ouv?"▾":"▸"}</span>
         <b>${esc(n.nom)}</b>
         <span class="cpt" data-cpt-niv="${n.id}">${on}/${liste.length}</span>
-        <button class="mini" data-add="niv:${n.id}" title="Tout ajouter">＋</button>
-        <button class="mini" data-del="niv:${n.id}" title="Tout retirer">−</button>
+        ${coche("niv:"+n.id, on, liste.length)}
       </div>
       <div class="jauge"><div data-jauge-niv="${n.id}" style="width:${on/liste.length*100}%"></div></div>
       ${!ouv ? "" : n.groupes.map(g=>{
@@ -409,8 +418,7 @@ function vueKanji(){
             <span class="chev">${gouv?"▾":"▸"}</span>
             <b>${esc(g.titre)}</b>
             <span class="cpt" data-cpt-grp="${g.id}">${gon}/${g.liste.length}</span>
-            <button class="mini" data-add="grp:${g.id}" title="Ajouter le groupe">＋</button>
-            <button class="mini" data-del="grp:${g.id}" title="Retirer le groupe">−</button>
+            ${coche("grp:"+g.id, gon, g.liste.length)}
           </div>
           ${!gouv ? "" : `<div class="puces">${g.liste.map(c=>
             `<button class="puce jp ${S.actifs[c.k]?"on":""}" data-k="${c.k}" data-grp-de="${g.id}" data-niv-de="${n.id}" title="${esc(c.sens)}">${c.k}</button>`
@@ -434,6 +442,13 @@ function vueKanji(){
   app.innerHTML = html;
 
   /* met à jour les compteurs sans tout reconstruire */
+  function majCoche(cible, on, total){
+    const b = app.querySelector(`[data-bascule="${cible}"]`);
+    if(!b) return;
+    b.className = "coche " + etatCoche(on,total);
+    b.textContent = glypheCoche(on,total);
+    b.title = titreCoche(on,total);
+  }
   function majCompteurs(){
     NIV.forEach(n=>{
       const liste = n.groupes.flatMap(g=>g.liste);
@@ -442,10 +457,12 @@ function vueKanji(){
       if(e) e.textContent = `${on}/${liste.length}`;
       const j = app.querySelector(`[data-jauge-niv="${n.id}"]`);
       if(j) j.style.width = (on/liste.length*100)+"%";
+      majCoche("niv:"+n.id, on, liste.length);
       n.groupes.forEach(g=>{
         const gon = g.liste.filter(c=>S.actifs[c.k]).length;
         const ge = app.querySelector(`[data-cpt-grp="${g.id}"]`);
         if(ge) ge.textContent = `${gon}/${g.liste.length}`;
+        majCoche("grp:"+g.id, gon, g.liste.length);
       });
     });
     app.querySelector(".rangee .cpt").textContent = `${actifs().length} / ${Object.keys(IDX).length}`;
@@ -458,25 +475,31 @@ function vueKanji(){
   $("#rien").onclick = ()=>{ S.actifs = {}; enregistrer(); redessiner(); };
 
   app.querySelectorAll("[data-niv]").forEach(e=>e.onclick = ev=>{
-    if(ev.target.closest(".mini")) return;
+    if(ev.target.closest(".coche")) return;
     ouvertsNiv[e.dataset.niv] = !ouvertsNiv[e.dataset.niv]; redessiner();
   });
   app.querySelectorAll("[data-grp]").forEach(e=>e.onclick = ev=>{
-    if(ev.target.closest(".mini")) return;
+    if(ev.target.closest(".coche")) return;
     ouvertsGrp[e.dataset.grp] = !ouvertsGrp[e.dataset.grp]; redessiner();
   });
 
-  /* boutons ＋ et − de niveau et de groupe */
-  function appliquer(cible, valeur){
+  /* la case bascule tout le niveau ou tout le groupe :
+     cochée si tout est actif, on décoche ; sinon on coche tout */
+  const listeDe = cible=>{
     const [type, id] = cible.split(":");
-    const liste = type === "niv"
-      ? NIV.find(n=>n.id===id).groupes.flatMap(g=>g.liste)
-      : groupeParId(id).liste;
-    liste.forEach(c=>{ if(valeur) S.actifs[c.k] = true; else delete S.actifs[c.k]; });
-    enregistrer(); redessiner();
-  }
-  app.querySelectorAll("[data-add]").forEach(b=>b.onclick = ev=>{ ev.stopPropagation(); appliquer(b.dataset.add, true); });
-  app.querySelectorAll("[data-del]").forEach(b=>b.onclick = ev=>{ ev.stopPropagation(); appliquer(b.dataset.del, false); });
+    return type === "niv" ? NIV.find(n=>n.id===id).groupes.flatMap(g=>g.liste)
+                          : groupeParId(id).liste;
+  };
+  app.querySelectorAll("[data-bascule]").forEach(b=>b.onclick = ev=>{
+    ev.stopPropagation();
+    const liste = listeDe(b.dataset.bascule);
+    const tout = liste.every(c=>S.actifs[c.k]);
+    liste.forEach(c=>{ if(tout) delete S.actifs[c.k]; else S.actifs[c.k] = true; });
+    enregistrer();
+    /* les puces visibles sont mises à jour sur place, pas de reconstruction */
+    app.querySelectorAll("[data-k]").forEach(p=>p.classList.toggle("on", !!S.actifs[p.dataset.k]));
+    majCompteurs();
+  });
 
   /* une puce bascule sur place : pas de reconstruction, donc pas de saut */
   app.querySelectorAll("[data-k]").forEach(e=>e.onclick = ()=>{
