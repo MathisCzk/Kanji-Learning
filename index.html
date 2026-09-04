@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#EDEFEA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141A1E" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="漢字 N5">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icone-192.png">
+<title>漢字 N5</title>
+<style>
+:root{
+  --papier:#EDEFEA; --carte:#F7F8F5; --encre:#1C2B33; --doux:#566A73;
+  --regle:#BCC9C6; --indigo:#2E5A6B; --shu:#C0453B; --or:#A88A3F; --vert:#3F7A5E;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --papier:#141A1E; --carte:#1B2429; --encre:#DDE4E2; --doux:#8CA0A6;
+    --regle:#35444A; --indigo:#79A9B5; --shu:#D6685E; --or:#C0A45C; --vert:#68A588;
+  }
+}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--papier); color:var(--encre);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased; overscroll-behavior:none;
+}
+.jp{font-family:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Noto Serif JP","MS Mincho",serif}
+#app{
+  max-width:640px; margin:0 auto;
+  padding:calc(14px + env(safe-area-inset-top)) 16px calc(80px + env(safe-area-inset-bottom));
+  min-height:100%;
+}
+
+/* ---- structure ---- */
+header.top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px}
+h1{font-size:24px;letter-spacing:.14em;font-weight:400;margin:0}
+h2{font-size:15px;font-weight:500;margin:26px 0 10px;letter-spacing:.02em}
+.meta{font-size:12px;color:var(--doux);font-variant-numeric:tabular-nums}
+.note{border-left:2px solid var(--or);padding:10px 0 10px 12px;margin:16px 0;font-size:13px;color:var(--doux)}
+.vide{text-align:center;padding:48px 16px;color:var(--doux);font-size:14px}
+.rangee{display:flex;gap:8px;align-items:center}
+.centre{text-align:center}
+
+/* ---- boutons ---- */
+button{font-family:inherit;font-size:15px;cursor:pointer;border-radius:2px}
+.b1{width:100%;border:none;padding:15px;background:var(--indigo);color:var(--papier);display:block}
+.b1:disabled{background:var(--regle);color:var(--doux)}
+.b2{background:none;border:1px solid var(--regle);color:var(--doux);padding:9px 14px;font-size:13px}
+.b2:hover,.b2.on{border-color:var(--indigo);color:var(--indigo)}
+:focus-visible{outline:2px solid var(--indigo);outline-offset:3px}
+
+/* ---- carreau d'écriture ---- */
+.carreau{
+  position:relative;width:100%;max-width:240px;margin:0 auto;aspect-ratio:1/1;
+  border:1px solid var(--regle);background:var(--carte);
+  display:flex;align-items:center;justify-content:center;touch-action:none;
+}
+.carreau::before,.carreau::after{content:"";position:absolute;opacity:.75;pointer-events:none}
+.carreau::before{left:6%;right:6%;top:50%;height:1px;background:repeating-linear-gradient(90deg,var(--regle) 0 4px,transparent 4px 9px)}
+.carreau::after{top:6%;bottom:6%;left:50%;width:1px;background:repeating-linear-gradient(180deg,var(--regle) 0 4px,transparent 4px 9px)}
+.glyphe{font-size:120px;line-height:1;position:relative;z-index:1}
+.carreau svg{position:absolute;inset:0;width:100%;height:100%;z-index:2;touch-action:none}
+.carreau svg path,.carreau svg polyline{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.fait{stroke:var(--encre);stroke-width:5}
+.brouillon{stroke:var(--indigo);stroke-width:5;opacity:.85}
+.indice{stroke:var(--shu);stroke-width:5;opacity:0}
+.verdict{min-height:38px;margin-top:12px;font-size:13px;text-align:center;color:var(--doux)}
+.verdict.juste-txt{color:var(--vert)}
+.verdict.faux-txt{color:var(--shu)}
+.note-b.suggere{border-color:var(--indigo);border-width:2px}
+.guide{position:absolute;font-size:150px;line-height:1;color:var(--encre);opacity:.10;z-index:1;pointer-events:none}
+
+/* ---- lectures & mots ---- */
+.bloc{border-top:1px solid var(--regle);padding-top:14px;margin-top:18px}
+.lect{display:flex;gap:12px;align-items:baseline;margin-bottom:6px}
+.lect b{font-size:17px;color:var(--indigo);flex:0 0 22px;font-weight:400}
+.lect span{font-size:16px;letter-spacing:.04em}
+.sens{font-size:21px;text-align:center;margin:16px 0 2px}
+.mot{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--regle)}
+.mot i{font-size:18px;font-style:normal}
+.mot em{font-size:13px;color:var(--doux);font-style:normal}
+.mot span{font-size:13px;color:var(--doux);margin-left:auto;text-align:right}
+
+/* ---- QCM ---- */
+.choix{display:grid;gap:8px;margin-top:20px}
+.choix.gros{grid-template-columns:1fr 1fr}
+.opt{
+  border:1px solid var(--regle);background:var(--carte);color:var(--encre);
+  padding:14px 12px;text-align:center;font-size:16px;transition:none;
+}
+.opt.k{font-size:44px;padding:14px 0;line-height:1.1}
+.opt.juste{border-color:var(--vert);color:var(--vert)}
+.opt.faux{border-color:var(--shu);color:var(--shu)}
+.opt:disabled{cursor:default}
+
+/* ---- notes SRS ---- */
+.notes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:18px}
+.note-b{border:1px solid var(--regle);background:none;color:var(--encre);padding:12px 2px;font-size:12px;display:flex;flex-direction:column;gap:3px;align-items:center}
+.note-b small{font-size:10px;color:var(--doux);font-variant-numeric:tabular-nums}
+.note-b.encore{border-color:var(--shu);color:var(--shu)}
+
+/* ---- listes / sélection ---- */
+.lecon{border:1px solid var(--regle);background:var(--carte);margin-bottom:8px}
+.lecon-tete{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}
+.lecon-tete b{font-weight:500;font-size:14px}
+.lecon-tete .meta{margin-left:auto}
+.puces{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 12px}
+.puce{
+  border:1px solid var(--regle);background:none;color:var(--doux);
+  width:42px;height:42px;font-size:22px;display:flex;align-items:center;justify-content:center;
+}
+.puce.on{border-color:var(--indigo);color:var(--encre);background:var(--papier)}
+.jauge{height:2px;background:var(--regle)}
+.jauge div{height:100%;background:var(--indigo)}
+
+/* ---- réglages ---- */
+.opt-ligne{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--regle)}
+.opt-ligne label{flex:1;font-size:14px}
+.opt-ligne .meta{font-size:12px}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--indigo)}
+input[type=number],input[type=text]{
+  background:var(--carte);border:1px solid var(--regle);color:var(--encre);
+  padding:8px;font-family:inherit;font-size:15px;border-radius:2px;width:100%;
+}
+input[type=number]{width:70px;text-align:center}
+
+/* ---- barre de navigation ---- */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:10;
+  display:flex;background:var(--carte);border-top:1px solid var(--regle);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{
+  flex:1;background:none;border:none;color:var(--doux);
+  padding:11px 4px;font-size:11px;display:flex;flex-direction:column;gap:3px;align-items:center;
+}
+nav button b{font-size:19px;font-weight:400}
+nav button.on{color:var(--indigo)}
+.pastille{
+  position:absolute;transform:translate(16px,-4px);background:var(--shu);color:#fff;
+  font-size:10px;min-width:17px;height:17px;border-radius:9px;display:flex;
+  align-items:center;justify-content:center;padding:0 4px;font-variant-numeric:tabular-nums;
+}
+
+.barre{display:flex;gap:3px;margin-bottom:18px}
+.barre span{flex:1;height:3px;background:var(--regle)}
+.barre span.on{background:var(--indigo)}
+.sceau{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border:1.5px solid var(--shu);color:var(--shu);font-size:13px;
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav id="nav"></nav>
+
+<script src="traces.js"></script>
+<script>
+"use strict";
+
+/* ================================================================
+   1. DONNÉES — 110 kanji N5
+   format : [kanji, sens, on'yomi, kun'yomi, "mot|kana|sens;mot|kana|sens"]
+   ================================================================ */
+
+const LECONS = [
+["Les chiffres","1 à 10",[
+["一","un","イチ・イツ","ひと.つ","一つ|ひとつ|un (objet);一人|ひとり|seul, une personne"],
+["二","deux","ニ","ふた.つ","二つ|ふたつ|deux (objets);二人|ふたり|deux personnes"],
+["三","trois","サン","みっ.つ・み","三つ|みっつ|trois (objets);三月|さんがつ|mars"],
+["四","quatre","シ","よん・よっ.つ・よ","四つ|よっつ|quatre (objets);四時|よじ|4 heures"],
+["五","cinq","ゴ","いつ.つ","五つ|いつつ|cinq (objets);五月|ごがつ|mai"],
+["六","six","ロク","むっ.つ","六つ|むっつ|six (objets);六本|ろっぽん|six objets longs"],
+["七","sept","シチ","なな.つ","七つ|ななつ|sept (objets);七時|しちじ|7 heures"],
+["八","huit","ハチ","やっ.つ","八つ|やっつ|huit (objets);八百屋|やおや|primeur"],
+["九","neuf","キュウ・ク","ここの.つ","九つ|ここのつ|neuf (objets);九時|くじ|9 heures"],
+["十","dix","ジュウ・ジッ","とお","十|じゅう|dix;十日|とおか|le 10 du mois"]]],
+
+["Nombres et mesures","argent, heures",[
+["百","cent","ヒャク","—","百|ひゃく|cent;三百|さんびゃく|trois cents"],
+["千","mille","セン","ち","千円|せんえん|mille yens;三千|さんぜん|trois mille"],
+["万","dix mille","マン・バン","—","一万円|いちまんえん|10 000 yens;万年筆|まんねんひつ|stylo-plume"],
+["円","yen, rond","エン","まる.い","千円|せんえん|mille yens;百円玉|ひゃくえんだま|pièce de 100 yens"],
+["年","année","ネン","とし","今年|ことし|cette année;来年|らいねん|l'an prochain"],
+["時","heure, moment","ジ","とき","何時|なんじ|quelle heure;時計|とけい|montre, horloge"],
+["分","minute, diviser","フン・プン・ブン","わ.かる・わ.ける","五分|ごふん|cinq minutes;分かる|わかる|comprendre"],
+["半","moitié","ハン","なか.ば","半分|はんぶん|la moitié;二時半|にじはん|2 h 30"]]],
+
+["Semaine et éléments","les sept jours",[
+["日","soleil, jour","ニチ・ジツ","ひ・び・か","日曜日|にちようび|dimanche;毎日|まいにち|tous les jours"],
+["月","lune, mois","ゲツ・ガツ","つき","月曜日|げつようび|lundi;今月|こんげつ|ce mois-ci"],
+["火","feu","カ","ひ","火曜日|かようび|mardi;花火|はなび|feu d'artifice"],
+["水","eau","スイ","みず","水曜日|すいようび|mercredi;水|みず|eau"],
+["木","arbre, bois","モク・ボク","き・こ","木曜日|もくようび|jeudi;木|き|arbre"],
+["金","or, argent","キン・コン","かね","金曜日|きんようび|vendredi;お金|おかね|argent"],
+["土","terre, sol","ド・ト","つち","土曜日|どようび|samedi;土地|とち|terrain"],
+["曜","jour de la semaine","ヨウ","—","曜日|ようび|jour de la semaine;何曜日|なんようび|quel jour"]]],
+
+["Le temps qui passe","avant, après, chaque",[
+["今","maintenant","コン・キン","いま","今|いま|maintenant;今日|きょう|aujourd'hui"],
+["何","quoi, combien","カ","なに・なん","何|なに|quoi;何人|なんにん|combien de personnes"],
+["毎","chaque","マイ","—","毎日|まいにち|tous les jours;毎週|まいしゅう|chaque semaine"],
+["週","semaine","シュウ","—","今週|こんしゅう|cette semaine;週末|しゅうまつ|week-end"],
+["間","intervalle, entre","カン・ケン","あいだ・ま","時間|じかん|temps, heure;人間|にんげん|être humain"],
+["午","midi","ゴ","—","午前|ごぜん|matin, a.m.;午後|ごご|après-midi, p.m."],
+["前","avant, devant","ゼン","まえ","名前|なまえ|nom;駅前|えきまえ|devant la gare"],
+["後","après, derrière","ゴ・コウ","あと・うし.ろ・のち","午後|ごご|après-midi;後ろ|うしろ|derrière"]]],
+
+["Position et direction","les panneaux de gare",[
+["上","haut, sur","ジョウ","うえ・あ.げる・のぼ.る","上|うえ|au-dessus;上手|じょうず|doué"],
+["下","bas, sous","カ・ゲ","した・さ.げる・くだ.さい","下|した|en dessous;下手|へた|mauvais en"],
+["中","milieu, dedans","チュウ","なか","中|なか|l'intérieur;中国|ちゅうごく|la Chine"],
+["外","extérieur","ガイ・ゲ","そと・ほか","外|そと|dehors;外国人|がいこくじん|étranger"],
+["右","droite","ウ・ユウ","みぎ","右|みぎ|droite;右手|みぎて|main droite"],
+["左","gauche","サ","ひだり","左|ひだり|gauche;左側|ひだりがわ|côté gauche"],
+["東","est","トウ","ひがし","東京|とうきょう|Tokyo;東口|ひがしぐち|sortie est"],
+["西","ouest","セイ・サイ","にし","西口|にしぐち|sortie ouest;関西|かんさい|région du Kansai"],
+["南","sud","ナン","みなみ","南口|みなみぐち|sortie sud;南米|なんべい|Amérique du Sud"],
+["北","nord","ホク","きた","北口|きたぐち|sortie nord;北海道|ほっかいどう|Hokkaidō"]]],
+
+["Les personnes","famille et entourage",[
+["人","personne","ジン・ニン","ひと","日本人|にほんじん|Japonais;三人|さんにん|trois personnes"],
+["男","homme","ダン・ナン","おとこ","男|おとこ|homme;男の子|おとこのこ|garçon"],
+["女","femme","ジョ・ニョ","おんな・め","女|おんな|femme;女性|じょせい|femme (formel)"],
+["子","enfant","シ・ス","こ","子供|こども|enfant;椅子|いす|chaise"],
+["父","père","フ","ちち・とう","父|ちち|mon père;お父さん|おとうさん|papa, votre père"],
+["母","mère","ボ","はは・かあ","母|はは|ma mère;お母さん|おかあさん|maman, votre mère"],
+["友","ami","ユウ","とも","友達|ともだち|ami;友人|ゆうじん|ami (formel)"],
+["先","avant, précédent","セン","さき","先生|せんせい|professeur;先週|せんしゅう|la semaine dernière"],
+["生","vie, naître, cru","セイ・ショウ","い.きる・う.まれる・なま","学生|がくせい|étudiant;生ビール|なまビール|bière pression"],
+["名","nom","メイ・ミョウ","な","名前|なまえ|nom;有名|ゆうめい|célèbre"]]],
+
+["Adjectifs","décrire les choses",[
+["大","grand","ダイ・タイ","おお.きい","大きい|おおきい|grand;大人|おとな|adulte"],
+["小","petit","ショウ","ちい.さい・こ・お","小さい|ちいさい|petit;小学校|しょうがっこう|école primaire"],
+["高","haut, cher","コウ","たか.い","高い|たかい|haut, cher;高校|こうこう|lycée"],
+["安","bon marché, paisible","アン","やす.い","安い|やすい|pas cher;安全|あんぜん|sécurité"],
+["新","nouveau","シン","あたら.しい","新しい|あたらしい|nouveau;新聞|しんぶん|journal"],
+["古","vieux (objet)","コ","ふる.い","古い|ふるい|vieux;中古|ちゅうこ|d'occasion"],
+["長","long, chef","チョウ","なが.い","長い|ながい|long;社長|しゃちょう|PDG"],
+["白","blanc","ハク・ビャク","しろ.い","白い|しろい|blanc;面白い|おもしろい|intéressant, drôle"],
+["多","nombreux","タ","おお.い","多い|おおい|nombreux;多分|たぶん|probablement"],
+["少","peu","ショウ","すこ.し・すく.ない","少し|すこし|un peu;少ない|すくない|peu nombreux"]]],
+
+["École et langue","lire, écrire, parler",[
+["学","étudier","ガク","まな.ぶ","学生|がくせい|étudiant;大学|だいがく|université"],
+["校","école","コウ","—","学校|がっこう|école;高校|こうこう|lycée"],
+["語","langue, mot","ゴ","かた.る","日本語|にほんご|japonais;フランス語|フランスご|français"],
+["話","parler, histoire","ワ","はな.す・はなし","話す|はなす|parler;電話|でんわ|téléphone"],
+["読","lire","ドク","よ.む","読む|よむ|lire;読書|どくしょ|lecture"],
+["書","écrire","ショ","か.く","書く|かく|écrire;辞書|じしょ|dictionnaire"],
+["見","voir","ケン","み.る・み.せる","見る|みる|voir, regarder;見せる|みせる|montrer"],
+["聞","écouter, demander","ブン・モン","き.く・きこ.える","聞く|きく|écouter, demander;新聞|しんぶん|journal"],
+["言","dire, parole","ゲン・ゴン","い.う・こと","言う|いう|dire;言葉|ことば|mot, langue"],
+["国","pays","コク","くに","外国|がいこく|étranger (pays);中国|ちゅうごく|Chine"],
+["本","livre, origine","ホン","もと","本|ほん|livre;日本|にほん|Japon"],
+["字","caractère","ジ","あざ","漢字|かんじ|kanji;ローマ字|ローマじ|rōmaji"],
+["文","texte, phrase","ブン・モン","ふみ","作文|さくぶん|rédaction;文化|ぶんか|culture"]]],
+
+["Verbes du quotidien","aller, manger, sortir",[
+["行","aller","コウ・ギョウ","い.く・おこな.う","行く|いく|aller;銀行|ぎんこう|banque"],
+["来","venir","ライ","く.る・き.ます","来る|くる|venir;来週|らいしゅう|la semaine prochaine"],
+["帰","rentrer","キ","かえ.る","帰る|かえる|rentrer;帰国|きこく|retour au pays"],
+["食","manger","ショク","た.べる・く.う","食べる|たべる|manger;食事|しょくじ|repas"],
+["飲","boire","イン","の.む","飲む|のむ|boire;飲み物|のみもの|boisson"],
+["買","acheter","バイ","か.う","買う|かう|acheter;買い物|かいもの|courses"],
+["出","sortir","シュツ","で.る・だ.す","出口|でぐち|sortie;出発|しゅっぱつ|départ"],
+["入","entrer","ニュウ","はい.る・い.れる","入口|いりぐち|entrée;入る|はいる|entrer"],
+["立","se tenir debout","リツ","た.つ","立つ|たつ|se lever;立入禁止|たちいりきんし|entrée interdite"],
+["休","se reposer","キュウ","やす.む","休む|やすむ|se reposer;休み|やすみ|pause, congé"],
+["会","rencontrer","カイ","あ.う","会う|あう|rencontrer;会社|かいしゃ|entreprise"]]],
+
+["Nature et ville","autour de vous",[
+["山","montagne","サン","やま","山|やま|montagne;富士山|ふじさん|mont Fuji"],
+["川","rivière","セン","かわ","川|かわ|rivière;川崎|かわさき|Kawasaki"],
+["田","rizière","デン","た・だ","田中|たなか|Tanaka (nom);山田|やまだ|Yamada (nom)"],
+["花","fleur","カ","はな","花|はな|fleur;花見|はなみ|contemplation des fleurs"],
+["天","ciel","テン","あま","天気|てんき|temps (météo);天ぷら|てんぷら|tempura"],
+["気","esprit, air","キ・ケ","—","元気|げんき|en forme;気持ち|きもち|sentiment"],
+["雨","pluie","ウ","あめ","雨|あめ|pluie;大雨|おおあめ|forte pluie"],
+["空","ciel, vide","クウ","そら・あ.く・から","空|そら|ciel;空港|くうこう|aéroport"],
+["電","électricité","デン","—","電車|でんしゃ|train;電気|でんき|électricité, lumière"],
+["車","voiture","シャ","くるま","車|くるま|voiture;自転車|じてんしゃ|vélo"],
+["駅","gare","エキ","—","駅|えき|gare;駅前|えきまえ|devant la gare"],
+["社","société, sanctuaire","シャ","やしろ","会社|かいしゃ|entreprise;神社|じんじゃ|sanctuaire"],
+["店","magasin","テン","みせ","店|みせ|magasin;店員|てんいん|vendeur"],
+["道","chemin, voie","ドウ","みち","道|みち|chemin;北海道|ほっかいどう|Hokkaidō"],
+["魚","poisson","ギョ","さかな・うお","魚|さかな|poisson;魚屋|さかなや|poissonnerie"],
+["犬","chien","ケン","いぬ","犬|いぬ|chien;子犬|こいぬ|chiot"]]],
+
+["Corps et force","bonus N5/N4",[
+["目","œil","モク","め","目|め|œil;目的|もくてき|but"],
+["口","bouche","コウ","くち・ぐち","口|くち|bouche;人口|じんこう|population"],
+["耳","oreille","ジ","みみ","耳|みみ|oreille;耳鼻科|じびか|ORL"],
+["手","main","シュ","て","手|て|main;切手|きって|timbre"],
+["足","pied, suffire","ソク","あし・た.りる","足|あし|pied, jambe;足りる|たりる|suffire"],
+["力","force","リョク・リキ","ちから","力|ちから|force;協力|きょうりょく|coopération"]]]
+];
+
+const TYPES = [
+  {id:"sens",    nom:"Retrouver le sens",       desc:"漢字 → sens"},
+  {id:"kanji",   nom:"Retrouver le kanji",      desc:"sens → 漢字"},
+  {id:"lecture", nom:"Retrouver les lectures",  desc:"漢字 → 音・訓"},
+  {id:"mot",     nom:"Lire un mot",             desc:"mot → prononciation"},
+  {id:"ecriture",nom:"Écrire le kanji",         desc:"sens → tracé"},
+];
+
+/* ================================================================
+   2. STOCKAGE LOCAL — localStorage, repli en mémoire
+   ================================================================ */
+
+const CLE = "kanji_n5_v1";
+let memoire = null;
+
+const Stock = {
+  dispo(){ try{ localStorage.setItem("_t","1"); localStorage.removeItem("_t"); return true; }catch{ return false; } },
+  lire(){
+    if(memoire) return memoire;
+    try{ const b = localStorage.getItem(CLE); if(b) return JSON.parse(b); }catch{}
+    return null;
+  },
+  ecrire(o){
+    memoire = o;
+    try{ localStorage.setItem(CLE, JSON.stringify(o)); return true; }catch{ return false; }
+  }
+};
+
+/* ================================================================
+   3. ÉTAT
+   ================================================================ */
+
+const defaut = () => ({
+  fiches:{},                                  // "漢|type" -> {ease,interval,reps,lapses,due}
+  actifs:{},                                  // "漢" -> true
+  types:{sens:true,kanji:true,lecture:true,mot:true,ecriture:true},
+  nouveauxParJour:10,
+  guide:true,
+  tolerance:"normal",
+  perso:[],                                   // kanji ajoutés à la main
+  journal:{}                                  // "AAAA-MM-JJ" -> nombre de révisions
+});
+
+let S = Object.assign(defaut(), Stock.lire() || {});
+if(!S.types) S.types = defaut().types;
+if(!S.journal) S.journal = {};
+if(!S.perso) S.perso = [];
+if(!S.tolerance) S.tolerance = "normal";
+let persistant = Stock.dispo();
+
+function enregistrer(){ persistant = Stock.ecrire(S) || persistant; }
+
+/* index des kanji ------------------------------------------------ */
+function construireIndex(){
+  const idx = {}, groupes = [];
+  LECONS.forEach((l,i)=>{
+    const liste = l[2].map(k=>{
+      const c = {k:k[0], sens:k[1], on:k[2], kun:k[3],
+        mots:k[4].split(";").map(m=>m.split("|")), lecon:i};
+      idx[c.k] = c; return c;
+    });
+    groupes.push({titre:l[0], sous:l[1], liste, id:i});
+  });
+  if(S.perso.length){
+    const liste = S.perso.map(p=>{
+      const c = {k:p.k, sens:p.sens, on:p.on||"—", kun:p.kun||"—",
+        mots:(p.mots||"").split(";").filter(Boolean).map(m=>m.split("|")), lecon:99, perso:true};
+      idx[c.k] = c; return c;
+    });
+    groupes.push({titre:"Mes kanji", sous:"ajoutés à la main", liste, id:99});
+  }
+  return {idx, groupes};
+}
+let {idx:IDX, groupes:GROUPES} = construireIndex();
+function rafraichirIndex(){ const r = construireIndex(); IDX = r.idx; GROUPES = r.groupes; }
+
+const actifs = () => Object.keys(S.actifs).filter(k=>S.actifs[k] && IDX[k]);
+const typesActifs = () => TYPES.filter(t=>S.types[t.id]).map(t=>t.id);
+
+/* ================================================================
+   4. MOTEUR SRS
+   ================================================================ */
+
+const JOUR = 86400000;
+const aujourdhui = () => new Date().toISOString().slice(0,10);
+
+function planifier(f, note){
+  let {ease=2.5, interval=0, reps=0, lapses=0} = f || {};
+  if(note === 0) return {ease:Math.max(1.3,ease-0.2), interval:0, reps:0, lapses:lapses+1, due:Date.now()};
+  reps++;
+  if(note === 3) ease = Math.max(1.3, ease-0.15);
+  if(note === 5) ease = Math.min(3.0, ease+0.1);
+  if(reps === 1) interval = note===5 ? 3 : 1;
+  else if(reps === 2) interval = note===3 ? 3 : 6;
+  else interval = Math.round(interval * (note===3 ? 1.3 : ease) * (note===5 ? 1.3 : 1));
+  interval = Math.max(1, Math.min(interval, 365));
+  return {ease, interval, reps, lapses, due:Date.now() + interval*JOUR};
+}
+const acquis = f => f && f.interval >= 21;
+
+/* file du jour --------------------------------------------------- */
+function fileDuJour(){
+  const now = Date.now(), du = [], neufs = [];
+  actifs().forEach(k=>{
+    typesActifs().forEach(t=>{
+      const f = S.fiches[k+"|"+t];
+      if(!f) neufs.push({k,t});
+      else if(f.due <= now) du.push({k,t});
+    });
+  });
+  melanger(du); melanger(neufs);
+  return du.concat(neufs.slice(0, Math.max(0, S.nouveauxParJour)));
+}
+function melanger(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const alea = a => a[(Math.random()*a.length)|0];
+
+/* ================================================================
+   5. RENDU
+   ================================================================ */
+
+const $ = s => document.querySelector(s);
+const app = $("#app"), barreNav = $("#nav");
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let vue = "accueil";
+let session = null;   // {file, i, revele, vues, ratees, reponse}
+
+function entete(){
+  const n = actifs().length;
+  const a = Object.values(S.fiches).filter(acquis).length;
+  return `<header class="top"><h1 class="jp">漢字 N5</h1>
+    <span class="meta">${n} kanji actifs · ${a} acquis</span></header>`;
+}
+
+function nav(){
+  const dus = session ? 0 : fileDuJour().length;
+  const items = [["accueil","習","Réviser"],["kanji","選","Mes kanji"],["stats","計","Suivi"],["reglages","設","Réglages"]];
+  barreNav.innerHTML = items.map(([id,g,t])=>
+    `<button data-vue="${id}" class="${vue===id?"on":""}">
+      <b class="jp">${g}</b>${t}${id==="accueil"&&dus?`<i class="pastille">${dus>99?"99+":dus}</i>`:""}
+    </button>`).join("");
+  barreNav.style.display = session ? "none" : "flex";
+}
+
+function rendre(){
+  window.scrollTo(0,0);
+  if(session){ vueSession(); nav(); return; }
+  ({accueil:vueAccueil, kanji:vueKanji, stats:vueStats, reglages:vueReglages}[vue])();
+  nav();
+}
+
+/* ---- accueil ---- */
+function vueAccueil(){
+  const file = fileDuJour();
+  const n = actifs().length;
+  let html = entete();
+
+  if(!persistant) html += `<div class="note">Le stockage local est bloqué (navigation privée ?). La progression ne survivra pas à la fermeture.</div>`;
+
+  if(!n){
+    html += `<div class="vide">Aucun kanji sélectionné.<br><br>Ouvrez « Mes kanji » et activez une leçon pour commencer.</div>`;
+  } else if(!typesActifs().length){
+    html += `<div class="vide">Aucun type d'exercice activé.<br><br>Rendez-vous dans les réglages.</div>`;
+  } else {
+    html += `<button class="b1" id="go" ${file.length?"":"disabled"}>
+      ${file.length ? `Commencer — ${file.length} carte${file.length>1?"s":""}` : "Tout est à jour"}</button>`;
+    if(!file.length) html += `<div class="note">Rien à réviser maintenant. Ajoutez des kanji dans « Mes kanji », ou revenez plus tard : les cartes reviennent juste avant l'oubli.</div>`;
+  }
+
+  html += `<h2>Exercices actifs</h2>`;
+  html += TYPES.map(t=>`<div class="opt-ligne">
+      <input type="checkbox" id="t_${t.id}" data-type="${t.id}" ${S.types[t.id]?"checked":""}>
+      <label for="t_${t.id}">${t.nom}<br><span class="meta jp">${t.desc}</span></label>
+    </div>`).join("");
+
+  app.innerHTML = html;
+  const go = $("#go"); if(go) go.onclick = demarrer;
+  app.querySelectorAll("[data-type]").forEach(c=>c.onchange = e=>{
+    S.types[e.target.dataset.type] = e.target.checked; enregistrer(); rendre();
+  });
+}
+
+/* ---- sélection des kanji ---- */
+let ouverts = {};
+function vueKanji(){
+  let html = entete();
+  html += `<div class="rangee" style="margin-bottom:14px">
+    <button class="b2" id="tout">Tout activer</button>
+    <button class="b2" id="rien">Tout désactiver</button>
+    <span class="meta" style="margin-left:auto">${actifs().length} / ${Object.keys(IDX).length}</span>
+  </div>`;
+
+  html += GROUPES.map(g=>{
+    const on = g.liste.filter(c=>S.actifs[c.k]).length;
+    const ac = g.liste.filter(c=>acquis(S.fiches[c.k+"|sens"])).length;
+    return `<div class="lecon">
+      <div class="lecon-tete" data-groupe="${g.id}">
+        <b>${g.id===99?"":g.id+1+". "}${esc(g.titre)}</b>
+        ${ac===g.liste.length?'<span class="sceau jp">済</span>':""}
+        <span class="meta">${on}/${g.liste.length}</span>
+      </div>
+      <div class="jauge"><div style="width:${on/g.liste.length*100}%"></div></div>
+      ${ouverts[g.id] ? `<div class="puces">
+        ${g.liste.map(c=>`<button class="puce jp ${S.actifs[c.k]?"on":""}" data-k="${c.k}" title="${esc(c.sens)}">${c.k}</button>`).join("")}
+        <button class="b2" data-lecon="${g.id}" style="width:auto;height:42px">${on===g.liste.length?"Retirer la leçon":"Activer la leçon"}</button>
+      </div>` : ""}
+    </div>`;
+  }).join("");
+
+  html += `<h2>Ajouter un kanji</h2>
+    <div class="note">Utile pour les kanji croisés au travail ou dans la rue : 安全, 品質, 検査…</div>
+    <div style="display:grid;gap:8px">
+      <input type="text" id="p_k" placeholder="漢字 (un seul caractère)" maxlength="2">
+      <input type="text" id="p_s" placeholder="Sens en français">
+      <input type="text" id="p_on" placeholder="On'yomi (カタカナ)">
+      <input type="text" id="p_kun" placeholder="Kun'yomi (ひらがな)">
+      <input type="text" id="p_m" placeholder="Mots : 安全|あんぜん|sécurité;…">
+      <button class="b1" id="ajouter">Ajouter à mes kanji</button>
+    </div>`;
+
+  app.innerHTML = html;
+
+  $("#tout").onclick = ()=>{ Object.keys(IDX).forEach(k=>S.actifs[k]=true); enregistrer(); rendre(); };
+  $("#rien").onclick = ()=>{ S.actifs = {}; enregistrer(); rendre(); };
+  app.querySelectorAll("[data-groupe]").forEach(e=>e.onclick = ()=>{
+    const id = +e.dataset.groupe; ouverts[id] = !ouverts[id]; rendre();
+  });
+  app.querySelectorAll("[data-k]").forEach(e=>e.onclick = ()=>{
+    const k = e.dataset.k; S.actifs[k] = !S.actifs[k]; enregistrer(); rendre();
+  });
+  app.querySelectorAll("[data-lecon]").forEach(e=>e.onclick = ()=>{
+    const g = GROUPES.find(x=>x.id === +e.dataset.lecon);
+    const tout = g.liste.every(c=>S.actifs[c.k]);
+    g.liste.forEach(c=>{ if(tout) delete S.actifs[c.k]; else S.actifs[c.k] = true; });
+    enregistrer(); rendre();
+  });
+  $("#ajouter").onclick = ()=>{
+    const k = $("#p_k").value.trim(), s = $("#p_s").value.trim();
+    if(!k || !s){ alert("Le kanji et son sens sont obligatoires."); return; }
+    if(IDX[k]){ alert("Ce kanji est déjà dans la liste."); return; }
+    S.perso.push({k, sens:s, on:$("#p_on").value.trim(), kun:$("#p_kun").value.trim(), mots:$("#p_m").value.trim()});
+    S.actifs[k] = true; enregistrer(); rafraichirIndex(); ouverts[99] = true; rendre();
+  };
+}
+
+/* ---- suivi ---- */
+function vueStats(){
+  const tot = Object.keys(IDX).length, act = actifs().length;
+  const f = Object.values(S.fiches);
+  const vus = new Set(Object.keys(S.fiches).map(x=>x.split("|")[0])).size;
+  const ac = f.filter(acquis).length;
+  const jours = Object.keys(S.journal).sort().slice(-14);
+  const max = Math.max(1, ...jours.map(j=>S.journal[j]));
+
+  let html = entete();
+  html += `<h2>Progression</h2>
+    <div class="opt-ligne"><label>Kanji activés</label><span class="meta">${act} / ${tot}</span></div>
+    <div class="opt-ligne"><label>Kanji déjà rencontrés</label><span class="meta">${vus}</span></div>
+    <div class="opt-ligne"><label>Cartes en circulation</label><span class="meta">${f.length}</span></div>
+    <div class="opt-ligne"><label>Cartes acquises (≥ 21 jours)</label><span class="meta">${ac}</span></div>`;
+
+  html += `<h2>Quatorze derniers jours</h2>`;
+  if(!jours.length) html += `<div class="vide">Aucune révision enregistrée.</div>`;
+  else html += `<div style="display:flex;gap:3px;align-items:flex-end;height:90px;margin-bottom:8px">
+      ${jours.map(j=>`<div style="flex:1;background:var(--indigo);height:${S.journal[j]/max*100}%;min-height:2px" title="${j} : ${S.journal[j]}"></div>`).join("")}
+    </div><div class="meta">${jours[0]} → ${jours[jours.length-1]} · maximum ${max} révisions</div>`;
+
+  html += `<h2>Sauvegarde</h2>
+    <div class="note">Tout est stocké sur ce téléphone uniquement. Exportez de temps en temps : si vous videz les données du navigateur, la progression disparaît.</div>
+    <div class="rangee">
+      <button class="b2" id="exp">Exporter un fichier</button>
+      <button class="b2" id="imp">Importer</button>
+    </div>
+    <input type="file" id="fic" accept="application/json" style="display:none">`;
+
+  app.innerHTML = html;
+  $("#exp").onclick = ()=>{
+    const b = new Blob([JSON.stringify(S)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(b);
+    a.download = `kanji-n5-${aujourdhui()}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  $("#imp").onclick = ()=> $("#fic").click();
+  $("#fic").onchange = e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=>{
+      try{
+        S = Object.assign(defaut(), JSON.parse(r.result));
+        enregistrer(); rafraichirIndex(); rendre();
+      }catch{ alert("Fichier illisible. Vérifiez qu'il vient bien de l'export."); }
+    };
+    r.readAsText(f);
+  };
+}
+
+/* ---- réglages ---- */
+function vueReglages(){
+  let html = entete();
+  html += `<h2>Session</h2>
+    <div class="opt-ligne"><label for="nb">Nouveaux kanji par session</label>
+      <input type="number" id="nb" min="0" max="40" value="${S.nouveauxParJour}"></div>
+    <div class="opt-ligne"><input type="checkbox" id="gd" ${S.guide?"checked":""}>
+      <label for="gd">Afficher le modèle en filigrane pendant le tracé</label></div>`;
+
+  html += `<h2>Exigence sur le tracé</h2>
+    <div class="rangee" style="margin-bottom:6px">
+      ${[["strict","Strict"],["normal","Normal"],["souple","Indulgent"]].map(([v,n])=>
+        `<button class="b2 ${S.tolerance===v?"on":""}" data-tol="${v}" style="flex:1">${n}</button>`).join("")}
+    </div>
+    <div class="note">L'ordre des traits est toujours vérifié. Ce réglage ne change que la tolérance sur la forme et le placement.</div>`;
+
+  html += `<h2>Types d'exercices</h2>` + TYPES.map(t=>`
+    <div class="opt-ligne"><input type="checkbox" id="r_${t.id}" data-type="${t.id}" ${S.types[t.id]?"checked":""}>
+      <label for="r_${t.id}">${t.nom}<br><span class="meta jp">${t.desc}</span></label></div>`).join("");
+
+  html += `<h2>Remise à zéro</h2>
+    <div class="rangee">
+      <button class="b2" id="rz-srs">Effacer la progression</button>
+      <button class="b2" id="rz-tout">Tout effacer</button>
+    </div>
+    <div class="note">« Effacer la progression » conserve votre sélection de kanji et vos ajouts personnels.</div>`;
+
+  app.innerHTML = html;
+  $("#nb").onchange = e=>{ S.nouveauxParJour = Math.max(0, Math.min(40, +e.target.value||0)); enregistrer(); };
+  $("#gd").onchange = e=>{ S.guide = e.target.checked; enregistrer(); };
+  app.querySelectorAll("[data-tol]").forEach(b=>b.onclick = ()=>{ S.tolerance = b.dataset.tol; enregistrer(); rendre(); });
+  app.querySelectorAll("[data-type]").forEach(c=>c.onchange = e=>{
+    S.types[e.target.dataset.type] = e.target.checked; enregistrer();
+  });
+  $("#rz-srs").onclick = ()=>{ if(confirm("Effacer toutes les fiches de révision ?")){ S.fiches={}; S.journal={}; enregistrer(); rendre(); } };
+  $("#rz-tout").onclick = ()=>{ if(confirm("Tout effacer, y compris la sélection et vos kanji personnels ?")){ S = defaut(); enregistrer(); rafraichirIndex(); rendre(); } };
+}
+
+/* ================================================================
+   6. SESSION D'EXERCICES
+   ================================================================ */
+
+function demarrer(){
+  const file = fileDuJour();
+  if(!file.length) return;
+  session = {file, i:0, revele:false, vues:0, ratees:0, reponse:null, ecr:null};
+  rendre();
+}
+
+function terminer(){ session = null; vue = "accueil"; rendre(); }
+
+function journaliser(){
+  const j = aujourdhui();
+  S.journal[j] = (S.journal[j]||0) + 1;
+  const cles = Object.keys(S.journal).sort();
+  while(cles.length > 60) delete S.journal[cles.shift()];
+}
+
+function noter(note){
+  const {k,t} = session.file[session.i];
+  S.fiches[k+"|"+t] = planifier(S.fiches[k+"|"+t], note);
+  journaliser(); enregistrer();
+  session.vues++;
+  const reste = session.file.slice();
+  const [c] = reste.splice(session.i, 1);
+  if(note === 0){ session.ratees++; reste.push(c); }        // repasse en fin de session
+  session.file = reste;
+  if(!reste.length){ session = {...session, fini:true}; rendre(); return; }
+  session.i = session.i >= reste.length ? 0 : session.i;
+  session.revele = false; session.reponse = null; session.ecr = null;
+  rendre();
+}
+
+function distracteurs(bon, n, extraire, valeurBonne){
+  const bassin = actifs().map(k=>IDX[k]).filter(c=>c && c.k !== bon.k);
+  const secours = Object.values(IDX).filter(c=>c.k !== bon.k);
+  const src = bassin.length >= n ? bassin : secours;
+  const vus = new Set([valeurBonne !== undefined ? valeurBonne : extraire(bon)]), out = [];
+  melanger(src.slice()).forEach(c=>{
+    if(out.length >= n) return;
+    const v = extraire(c);
+    if(v && !vus.has(v)){ vus.add(v); out.push(c); }
+  });
+  return out;
+}
+
+function blocLectures(c){
+  return `<div class="bloc">
+    <div class="lect"><b class="jp">音</b><span class="jp">${esc(c.on)}</span></div>
+    <div class="lect"><b class="jp">訓</b><span class="jp">${esc(c.kun)}</span></div>
+  </div>`;
+}
+function blocMots(c){
+  if(!c.mots.length) return "";
+  return `<div class="bloc">${c.mots.map(m=>
+    `<div class="mot"><i class="jp">${esc(m[0])}</i><em class="jp">${esc(m[1]||"")}</em><span>${esc(m[2]||"")}</span></div>`
+  ).join("")}</div>`;
+}
+
+function vueSession(){
+  if(session.fini){
+    app.innerHTML = `<div class="centre" style="padding-top:40px">
+      <div class="carreau" style="max-width:150px"><span class="glyphe jp" style="font-size:76px;color:var(--shu)">済</span></div>
+      <div class="sens">Session terminée</div>
+      <p class="meta" style="margin-bottom:26px">${session.vues} révision${session.vues>1?"s":""} · ${session.ratees} à retravailler</p>
+      <button class="b1" id="fin">Retour</button></div>`;
+    $("#fin").onclick = terminer;
+    return;
+  }
+
+  const {k,t} = session.file[session.i];
+  const c = IDX[k];
+  const type = TYPES.find(x=>x.id === t);
+  const tete = `<div class="rangee" style="margin-bottom:16px">
+      <span class="meta">${type.nom}</span>
+      <span class="meta" style="margin-left:auto">${session.file.length} restante${session.file.length>1?"s":""}</span>
+    </div>`;
+
+  if(t === "ecriture") return exoEcriture(c, tete);
+  if(session.revele)   return revelation(c, tete);
+  return exoQCM(c, t, tete);
+}
+
+/* ---- QCM ---- */
+function exoQCM(c, t, tete){
+  let question, extraire, rendreOpt, gros = false;
+
+  if(t === "sens"){
+    question = `<div class="carreau"><span class="glyphe jp">${c.k}</span></div>`;
+    extraire = x => x.sens;
+    rendreOpt = x => esc(x.sens);
+  } else if(t === "kanji"){
+    question = `<div class="sens" style="margin:30px 0">${esc(c.sens)}</div>`;
+    extraire = x => x.k;
+    rendreOpt = x => `<span class="jp">${x.k}</span>`;
+    gros = true;
+  } else if(t === "lecture"){
+    question = `<div class="carreau"><span class="glyphe jp">${c.k}</span></div>`;
+    extraire = x => x.on + " / " + x.kun;
+    rendreOpt = x => `<span class="jp" style="font-size:14px">音 ${esc(x.on)}<br>訓 ${esc(x.kun)}</span>`;
+  } else { // mot
+    if(!c.mots.length){ noter(4); return; }
+    if(!session.motChoisi) session.motChoisi = alea(c.mots);
+    const m = session.motChoisi;
+    question = `<div class="centre" style="margin:26px 0">
+        <div class="jp" style="font-size:56px;line-height:1.2">${esc(m[0])}</div>
+        <div class="meta" style="margin-top:6px">${esc(m[2]||"")}</div></div>`;
+    extraire = x => (x.mots[0] && x.mots[0][1]) || "";
+    rendreOpt = x => `<span class="jp">${esc(x === c ? session.motChoisi[1] : x.mots[0][1])}</span>`;
+  }
+
+  const valeurBonne = t === "mot" ? session.motChoisi[1] : extraire(c);
+  const options = melanger([c, ...distracteurs(c, 3, extraire, valeurBonne)]);
+
+  app.innerHTML = tete + question +
+    `<div class="choix ${gros?"gros":""}">${options.map((o,i)=>
+      `<button class="opt ${gros?"k":""}" data-i="${i}" data-bon="${o===c?1:0}">${rendreOpt(o)}</button>`).join("")}</div>
+     <div class="centre" style="margin-top:18px"><button class="b2" id="stop">Interrompre</button></div>`;
+
+  app.querySelectorAll(".opt").forEach(b=>b.onclick = ()=>{
+    const bon = b.dataset.bon === "1";
+    app.querySelectorAll(".opt").forEach(x=>{
+      x.disabled = true;
+      if(x.dataset.bon === "1") x.classList.add("juste");
+    });
+    if(!bon) b.classList.add("faux");
+    session.reponse = bon;
+    setTimeout(()=>{ session.revele = true; session.motChoisi = null; rendre(); }, bon ? 450 : 1100);
+  });
+  $("#stop").onclick = terminer;
+}
+
+/* ---- révélation + notation ---- */
+function revelation(c, tete){
+  const bon = session.reponse;
+  const p = n => planifier(S.fiches[c.k+"|"+session.file[session.i].t], n).interval;
+  app.innerHTML = tete +
+    `<div class="carreau"><span class="glyphe jp">${c.k}</span></div>
+     <div class="sens">${esc(c.sens)}</div>
+     ${blocLectures(c)}${blocMots(c)}
+     ${bon === false ? `<div class="note" style="border-color:var(--shu)">Réponse manquée. Choisissez « Encore » pour la revoir dans cette session.</div>` : ""}
+     <div class="notes">
+       <button class="note-b encore" data-n="0">Encore<small>maintenant</small></button>
+       <button class="note-b" data-n="3">Difficile<small>${p(3)} j</small></button>
+       <button class="note-b" data-n="4">Bien<small>${p(4)} j</small></button>
+       <button class="note-b" data-n="5">Facile<small>${p(5)} j</small></button>
+     </div>
+     <div class="centre" style="margin-top:16px"><button class="b2" id="stop">Interrompre</button></div>`;
+  app.querySelectorAll("[data-n]").forEach(b=>b.onclick = ()=>noter(+b.dataset.n));
+  $("#stop").onclick = terminer;
+}
+
+/* ---- écriture au doigt : moteur de reconnaissance de tracé ----
+   Chaque trait de l'utilisateur est comparé au trait attendu de KanjiVG :
+   position de départ, position d'arrivée, forme, sens et longueur.
+   L'ordre est imposé — si le trait est juste mais arrive trop tôt,
+   l'application le dit explicitement.                              */
+
+const SEUILS = {
+  strict: {debut:16, fin:16, moyenne: 9, cos:0.55, rmin:0.65, rmax:1.60, point:11},
+  normal: {debut:22, fin:22, moyenne:12, cos:0.25, rmin:0.45, rmax:2.30, point:16},
+  souple: {debut:30, fin:30, moyenne:17, cos:0.00, rmin:0.32, rmax:3.20, point:22}
+};
+const N_ECH = 16;   // points de rééchantillonnage par trait
+
+const dist = (a,b) => Math.hypot(a[0]-b[0], a[1]-b[1]);
+function longueur(p){ let s=0; for(let i=1;i<p.length;i++) s += dist(p[i-1],p[i]); return s; }
+
+/* rééchantillonne une polyligne en n points équidistants */
+function reechantillonner(p, n){
+  if(p.length < 2) return Array.from({length:n}, ()=> (p[0]||[0,0]).slice());
+  const cum=[0];
+  for(let i=1;i<p.length;i++) cum.push(cum[i-1] + dist(p[i-1],p[i]));
+  const L = cum[cum.length-1];
+  if(L === 0) return Array.from({length:n}, ()=> p[0].slice());
+  const out=[];
+  for(let i=0;i<n;i++){
+    const cible = L*i/(n-1);
+    let j=1; while(j < cum.length-1 && cum[j] < cible) j++;
+    const seg = cum[j]-cum[j-1] || 1;
+    const t = (cible - cum[j-1]) / seg;
+    out.push([p[j-1][0] + (p[j][0]-p[j-1][0])*t, p[j-1][1] + (p[j][1]-p[j-1][1])*t]);
+  }
+  return out;
+}
+
+function comparerTraits(u, m){
+  const n = u.length;
+  let somme = 0; for(let i=0;i<n;i++) somme += dist(u[i], m[i]);
+  const du = [u[n-1][0]-u[0][0], u[n-1][1]-u[0][1]];
+  const dm = [m[n-1][0]-m[0][0], m[n-1][1]-m[0][1]];
+  const nu = Math.hypot(du[0],du[1]), nm = Math.hypot(dm[0],dm[1]);
+  const lm = longueur(m);
+  return {
+    debut: dist(u[0], m[0]),
+    fin: dist(u[n-1], m[n-1]),
+    moyenne: somme/n,
+    cos: (nu < 1 || nm < 1) ? 1 : (du[0]*dm[0] + du[1]*dm[1])/(nu*nm),
+    ratio: lm < 1 ? 1 : longueur(u)/lm
+  };
+}
+
+/* verdict sur un trait — u et m sont rééchantillonnés, repère 109×109 */
+function verdictTrait(u, m, s){
+  const lm = longueur(m);
+  if(lm < 9){                                   // point ou trait très court
+    const cu = [(u[0][0]+u[u.length-1][0])/2, (u[0][1]+u[u.length-1][1])/2];
+    const cm = [(m[0][0]+m[m.length-1][0])/2, (m[0][1]+m[m.length-1][1])/2];
+    return dist(cu,cm) <= s.point && longueur(u) <= lm + 24
+      ? {ok:true} : {ok:false, raison:"place"};
+  }
+  const c = comparerTraits(u, m);
+  if(c.ratio < s.rmin)                 return {ok:false, raison:"court"};
+  if(c.ratio > s.rmax)                 return {ok:false, raison:"long"};
+  if(c.cos < s.cos)                    return {ok:false, raison:"sens"};
+  if(c.debut > s.debut || c.fin > s.fin) return {ok:false, raison:"depart"};
+  if(c.moyenne > s.moyenne)            return {ok:false, raison:"forme"};
+  return {ok:true};
+}
+
+const RAISONS = {
+  sens:   "Trait tracé dans le mauvais sens. En japonais, on va toujours de haut en bas et de gauche à droite.",
+  depart: "Le trait ne part pas du bon endroit.",
+  court:  "Trait trop court.",
+  long:   "Trait trop long.",
+  forme:  "La forme ne correspond pas au trait attendu.",
+  place:  "Ce point n'est pas au bon endroit."
+};
+
+/* ---- exercice ---- */
+function exoEcriture(c, tete){
+  if(session.revele) return revelation(c, tete);
+
+  const modele = (typeof TRACES !== "undefined") && TRACES[c.k];
+  if(!modele) return exoEcritureLibre(c, tete);      // kanji perso : auto-évaluation
+
+  const E = session.ecr || (session.ecr = {n:0, erreurs:0, echecs:0, aide:0});
+  const s = SEUILS[S.tolerance] || SEUILS.normal;
+
+  app.innerHTML = tete +
+    `<div class="sens">${esc(c.sens)}</div>
+     <div class="bloc" style="padding-bottom:4px">
+       <div class="lect"><b class="jp">音</b><span class="jp">${esc(c.on)}</span></div>
+       <div class="lect"><b class="jp">訓</b><span class="jp">${esc(c.kun)}</span></div>
+     </div>
+     <div class="meta centre" id="compteur" style="margin:14px 0 10px"></div>
+     <div class="carreau">
+       ${S.guide ? `<span class="guide jp">${c.k}</span>` : ""}
+       <svg id="tableau" viewBox="0 0 109 109">
+         <g id="faits"></g>
+         <path id="indice" class="indice"></path>
+         <polyline id="brouillon" class="brouillon"></polyline>
+       </svg>
+     </div>
+     <div id="verdict" class="verdict"></div>
+     <div class="rangee" style="justify-content:center;margin-top:12px">
+       <button class="b2" id="aide">Montrer le trait</button>
+       <button class="b2" id="reprendre">Recommencer</button>
+     </div>
+     <div id="apres"></div>
+     <div class="centre" style="margin-top:14px"><button class="b2" id="stop">Interrompre</button></div>`;
+
+  const svg = $("#tableau"), gFaits = $("#faits"), indice = $("#indice"), brouillon = $("#brouillon");
+  const boite = $("#verdict"), compteur = $("#compteur");
+
+  /* points de référence de chaque trait, calculés par le navigateur */
+  const sonde = document.createElementNS("http://www.w3.org/2000/svg","path");
+  svg.appendChild(sonde);
+  const pointsModele = modele.map(d=>{
+    sonde.setAttribute("d", d);
+    const L = sonde.getTotalLength();
+    const brut = [];
+    for(let i=0;i<=40;i++){ const p = sonde.getPointAtLength(L*i/40); brut.push([p.x,p.y]); }
+    return reechantillonner(brut, N_ECH);
+  });
+  svg.removeChild(sonde);
+
+  function majCompteur(){
+    compteur.textContent = E.n >= modele.length
+      ? `${modele.length} traits — terminé`
+      : `Trait ${E.n+1} sur ${modele.length}${E.erreurs ? ` · ${E.erreurs} erreur${E.erreurs>1?"s":""}` : ""}`;
+  }
+  function dessinerFaits(){
+    gFaits.innerHTML = modele.slice(0, E.n).map(d=>`<path class="fait" d="${d}"></path>`).join("");
+  }
+  function animerIndice(d){
+    indice.setAttribute("d", d);
+    indice.style.opacity = 1;
+    const L = indice.getTotalLength();
+    indice.style.transition = "none";
+    indice.style.strokeDasharray = L;
+    indice.style.strokeDashoffset = L;
+    indice.getBoundingClientRect();
+    const calme = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    indice.style.transition = `stroke-dashoffset ${calme ? 0 : 0.85}s ease-in-out`;
+    indice.style.strokeDashoffset = 0;
+  }
+  function cacherIndice(){ indice.style.opacity = 0; indice.removeAttribute("d"); }
+  function message(txt, type){
+    boite.textContent = txt || "";
+    boite.className = "verdict" + (type ? " " + type : "");
+  }
+
+  dessinerFaits(); majCompteur();
+
+  /* ---- saisie ---- */
+  let trace = false, pts = [];
+  const coord = e=>{
+    const r = svg.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return [(t.clientX - r.left) / r.width * 109, (t.clientY - r.top) / r.height * 109];
+  };
+  const peindre = ()=> brouillon.setAttribute("points", pts.map(p=>p.join(",")).join(" "));
+
+  /* évènements « pointer » uniquement : ils couvrent doigt, stylet et souris.
+     touch-action:none (CSS) empêche le défilement pendant le tracé.
+     La capture évite de perdre le trait si le doigt sort du carreau. */
+  function debut(e){
+    if(E.n >= modele.length) return;
+    e.preventDefault();
+    try{ svg.setPointerCapture(e.pointerId); }catch{}
+    trace = true; pts = [coord(e)]; peindre();
+  }
+  function bouge(e){ if(!trace) return; e.preventDefault(); pts.push(coord(e)); peindre(); }
+  function fin(e){
+    if(!trace) return;
+    trace = false; e.preventDefault();
+    const brut = pts;
+    pts = []; brouillon.removeAttribute("points");
+    if(!brut.length) return;
+    evaluer(brut);
+  }
+  svg.addEventListener("pointerdown", debut);
+  svg.addEventListener("pointermove", bouge);
+  svg.addEventListener("pointerup", fin);
+  svg.addEventListener("pointercancel", fin);
+
+  /* ---- évaluation d'un trait ---- */
+  function evaluer(brut){
+    const u = reechantillonner(brut, N_ECH);
+    const attendu = pointsModele[E.n];
+    const v = verdictTrait(u, attendu, s);
+
+    if(v.ok){
+      E.n++; E.echecs = 0; cacherIndice(); dessinerFaits(); majCompteur();
+      message(E.n >= modele.length ? "" : "Trait correct.", E.n >= modele.length ? "" : "juste-txt");
+      if(E.n >= modele.length) terminerCaractere();
+      return;
+    }
+
+    E.erreurs++; E.echecs++;
+
+    /* le trait est-il correct, mais joué trop tôt ? */
+    let ordre = -1;
+    for(let j = E.n + 1; j < modele.length; j++){
+      if(verdictTrait(u, pointsModele[j], s).ok){ ordre = j; break; }
+    }
+    if(ordre >= 0){
+      message(`Ce trait est bien tracé, mais c'est le n° ${ordre+1}. Le trait n° ${E.n+1} vient d'abord.`, "faux-txt");
+    } else if(verdictTrait(u, attendu.slice().reverse(), s).ok){
+      message(RAISONS.sens, "faux-txt");
+    } else {
+      message(RAISONS[v.raison] || RAISONS.forme, "faux-txt");
+    }
+
+    majCompteur();
+    if(E.echecs >= 2) animerIndice(modele[E.n]);   // au 2e échec, on montre
+  }
+
+  function terminerCaractere(){
+    cacherIndice();
+    const note = E.erreurs === 0 ? 4 : E.erreurs <= 2 ? 3 : 0;
+    const p = n => planifier(S.fiches[c.k+"|ecriture"], n).interval;
+    message(E.erreurs === 0
+      ? `Caractère complet, ${modele.length} traits sans erreur.`
+      : `Caractère complet — ${E.erreurs} erreur${E.erreurs>1?"s":""}.`,
+      E.erreurs === 0 ? "juste-txt" : "");
+    $("#aide").style.display = $("#reprendre").style.display = "none";
+    $("#apres").innerHTML = `<div class="notes">
+        <button class="note-b encore ${note===0?"suggere":""}" data-n="0">Encore<small>maintenant</small></button>
+        <button class="note-b ${note===3?"suggere":""}" data-n="3">Difficile<small>${p(3)} j</small></button>
+        <button class="note-b ${note===4?"suggere":""}" data-n="4">Bien<small>${p(4)} j</small></button>
+        <button class="note-b" data-n="5">Facile<small>${p(5)} j</small></button>
+      </div>`;
+    $("#apres").querySelectorAll("[data-n]").forEach(b=>b.onclick = ()=>{
+      session.ecr = null; noter(+b.dataset.n);
+    });
+  }
+
+  $("#aide").onclick = ()=>{
+    if(E.n >= modele.length) return;
+    E.erreurs++; E.echecs = 0; E.aide++;
+    animerIndice(modele[E.n]); majCompteur();
+    message(`Trait n° ${E.n+1} — reproduisez-le.`, "");
+  };
+  $("#reprendre").onclick = ()=>{
+    session.ecr = {n:0, erreurs:E.erreurs, echecs:0, aide:E.aide};
+    rendre();
+  };
+  $("#stop").onclick = ()=>{ session.ecr = null; terminer(); };
+}
+
+/* repli pour un kanji sans données de tracé (ajouté à la main) */
+function exoEcritureLibre(c, tete){
+  app.innerHTML = tete +
+    `<div class="sens">${esc(c.sens)}</div>${blocLectures(c)}
+     <div class="note">Pas de données de tracé pour ce kanji ajouté à la main : l'ordre des traits ne peut pas être vérifié. Tracez, puis comparez vous-même.</div>
+     <div class="carreau">
+       <svg id="tableau" viewBox="0 0 109 109"><polyline id="brouillon" class="brouillon"></polyline>
+       <g id="faits"></g></svg>
+     </div>
+     <div class="rangee" style="justify-content:center;margin-top:12px">
+       <button class="b2" id="effacer">Effacer</button>
+     </div>
+     <div style="margin-top:18px"><button class="b1" id="verif">Vérifier</button></div>
+     <div class="centre" style="margin-top:12px"><button class="b2" id="stop">Interrompre</button></div>`;
+
+  const svg = $("#tableau"), br = $("#brouillon"), gf = $("#faits");
+  let trace = false, pts = [], faits = [];
+  const coord = e=>{ const r = svg.getBoundingClientRect(); const t = e.touches?e.touches[0]:e;
+    return [(t.clientX-r.left)/r.width*109, (t.clientY-r.top)/r.height*109]; };
+  const peindre = ()=> br.setAttribute("points", pts.map(p=>p.join(",")).join(" "));
+  const redessiner = ()=> gf.innerHTML = faits.map(f=>`<polyline class="brouillon" points="${f.map(p=>p.join(",")).join(" ")}"></polyline>`).join("");
+
+  svg.addEventListener("pointerdown", e=>{ e.preventDefault(); try{svg.setPointerCapture(e.pointerId);}catch{} trace=true; pts=[coord(e)]; peindre(); });
+  svg.addEventListener("pointermove", e=>{ if(!trace) return; e.preventDefault(); pts.push(coord(e)); peindre(); });
+  const relacher = ()=>{ if(!trace) return; trace=false; if(pts.length>1) faits.push(pts); pts=[]; br.removeAttribute("points"); redessiner(); };
+  svg.addEventListener("pointerup", relacher);
+  svg.addEventListener("pointercancel", relacher);
+
+  $("#effacer").onclick = ()=>{ faits=[]; pts=[]; br.removeAttribute("points"); redessiner(); };
+  $("#verif").onclick = ()=>{ session.reponse = null; session.revele = true; rendre(); };
+  $("#stop").onclick = terminer;
+}
+
+/* ================================================================
+   7. DÉMARRAGE
+   ================================================================ */
+
+barreNav.addEventListener("click", e=>{
+  const b = e.target.closest("[data-vue]");
+  if(!b) return;
+  vue = b.dataset.vue; session = null; rendre();
+});
+
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+
+rendre();
+</script>
+</body>
+</html>
