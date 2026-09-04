@@ -200,7 +200,7 @@ const TYPES = [
    ================================================================ */
 
 const CLE = "kanji_n5_v1";
-const VERSION_APP = "2026-09-04d";   // à changer en même temps que VERSION dans sw.js
+const VERSION_APP = "2026-09-04e";   // étiquette affichée dans les réglages, sans effet technique
 let memoire = null;
 
 const Stock = {
@@ -294,17 +294,31 @@ function planifier(f, note){
 const acquis = f => f && f.interval >= 21;
 
 /* file du jour --------------------------------------------------- */
+/* Une session = toutes les cartes arrivées à échéance (kanji déjà vus)
+   suivies des cartes des kanji neufs, dans la limite du quota.
+   Le quota se compte en KANJI, pas en cartes : un kanji neuf apporte
+   autant de cartes qu'il y a d'exercices activés. */
 function fileDuJour(){
-  const now = Date.now(), du = [], neufs = [];
+  const now = Date.now(), du = [], neufsPar = new Map();
   actifs().forEach(k=>{
     typesActifs().forEach(t=>{
       const f = S.fiches[k+"|"+t];
-      if(!f) neufs.push({k,t});
-      else if(f.due <= now) du.push({k,t});
+      if(!f){
+        if(!neufsPar.has(k)) neufsPar.set(k, []);
+        neufsPar.get(k).push({k,t});
+      } else if(f.due <= now) du.push({k,t});
     });
   });
-  melanger(du); melanger(neufs);
-  return du.concat(neufs.slice(0, Math.max(0, S.nouveauxParJour)));
+  melanger(du);
+  /* priorité aux kanji déjà entamés à qui il manque un exercice :
+     on termine ce qui est commencé avant d'en ouvrir de nouveaux */
+  const entames = [], vierges = [];
+  neufsPar.forEach((_, k)=>{
+    (typesActifs().some(t=>S.fiches[k+"|"+t]) ? entames : vierges).push(k);
+  });
+  const choisis = melanger(entames).concat(melanger(vierges))
+                    .slice(0, Math.max(0, S.nouveauxParJour));
+  return du.concat(melanger(choisis.flatMap(k=>neufsPar.get(k))));
 }
 function melanger(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
 const alea = a => a[(Math.random()*a.length)|0];
@@ -575,7 +589,8 @@ function vueStats(){
 function vueReglages(){
   let html = entete();
   html += `<h2>Session</h2>
-    <div class="opt-ligne"><label for="nb">Nouveaux kanji par session</label>
+    <div class="opt-ligne"><label for="nb">Nouveaux kanji par session<br>
+      <span class="meta">soit jusqu'à ${S.nouveauxParJour * Math.max(1,typesActifs().length)} cartes, avec ${typesActifs().length} exercice${typesActifs().length>1?"s":""} activé${typesActifs().length>1?"s":""}</span></label>
       <input type="number" id="nb" min="0" max="40" value="${S.nouveauxParJour}"></div>
     <div class="opt-ligne"><input type="checkbox" id="gd" ${S.guide?"checked":""}>
       <label for="gd">Afficher le modèle en filigrane pendant le tracé</label></div>`;
@@ -600,7 +615,7 @@ function vueReglages(){
     <div class="meta centre" style="margin-top:22px">Version ${VERSION_APP}${navigator.serviceWorker && navigator.serviceWorker.controller ? " · hors ligne actif" : ""}</div>`;
 
   app.innerHTML = html;
-  $("#nb").onchange = e=>{ S.nouveauxParJour = Math.max(0, Math.min(40, +e.target.value||0)); enregistrer(); };
+  $("#nb").onchange = e=>{ S.nouveauxParJour = Math.max(0, Math.min(40, +e.target.value||0)); enregistrer(); rendre(); };
   $("#gd").onchange = e=>{ S.guide = e.target.checked; enregistrer(); };
   app.querySelectorAll("[data-tol]").forEach(b=>b.onclick = ()=>{ S.tolerance = b.dataset.tol; enregistrer(); rendre(); });
   app.querySelectorAll("[data-type]").forEach(c=>c.onchange = e=>{
