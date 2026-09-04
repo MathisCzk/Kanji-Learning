@@ -62,9 +62,10 @@ Les 30 kanji que les listes JLPT classent en N4/N3 mais qui figuraient déjà
 dans les leçons N5 thématiques (会, 力, 口, 新, 空…) n'apparaissent qu'une fois,
 dans le N5.
 
-Chaque niveau et chaque groupe se déplie d'une touche, et porte deux boutons
-**＋** et **−** qui activent ou retirent tout son contenu d'un coup. Seuls les
-kanji activés entrent dans les exercices.
+Chaque niveau et chaque groupe se déplie d'une touche, et porte une case à
+cocher à trois états : pleine si tout est activé, barrée si une partie
+seulement l'est, vide sinon. Un appui active tout le contenu, un second le
+retire. Seuls les kanji activés entrent dans les exercices.
 
 Un formulaire en bas de page permet d'ajouter n'importe quel kanji rencontré
 ailleurs. Vos ajouts forment un quatrième niveau, « Mes kanji ».
