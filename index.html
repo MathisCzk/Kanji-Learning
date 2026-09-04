@@ -97,6 +97,11 @@ button{font-family:inherit;font-size:15px;cursor:pointer;border-radius:2px}
 .opt.k{font-size:44px;padding:14px 0;line-height:1.1}
 .opt.juste{border-color:var(--vert);color:var(--vert)}
 .opt.faux{border-color:var(--shu);color:var(--shu)}
+.opt.choisi{border-color:var(--indigo);color:var(--indigo);border-width:2px}
+.lect-bloc{margin-top:18px}
+.lect-tete{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.lect-tete b{font-size:19px;color:var(--indigo);font-weight:400}
+.choix.deux{grid-template-columns:1fr 1fr}
 .opt:disabled{cursor:default}
 
 /* ---- notes SRS ---- */
@@ -647,7 +652,7 @@ function vueReglages(){
 function demarrer(){
   const file = fileDuJour();
   if(!file.length) return;
-  session = {file, i:0, revele:false, vues:0, ratees:0, reponse:null, ecr:null};
+  session = {file, i:0, revele:false, vues:0, ratees:0, reponse:null, ecr:null, lect:null};
   rendre();
 }
 
@@ -671,7 +676,7 @@ function noter(note){
   session.file = reste;
   if(!reste.length){ session = {...session, fini:true}; rendre(); return; }
   session.i = session.i >= reste.length ? 0 : session.i;
-  session.revele = false; session.reponse = null; session.ecr = null;
+  session.revele = false; session.reponse = null; session.ecr = null; session.lect = null;
   rendre();
 }
 
@@ -722,6 +727,7 @@ function vueSession(){
 
   if(t === "ecriture") return exoEcriture(c, tete);
   if(session.revele)   return revelation(c, tete);
+  if(t === "lecture")  return exoLectures(c, tete);
   return exoQCM(c, t, tete);
 }
 
@@ -738,10 +744,6 @@ function exoQCM(c, t, tete){
     extraire = x => x.k;
     rendreOpt = x => `<span class="jp">${x.k}</span>`;
     gros = true;
-  } else if(t === "lecture"){
-    question = `<div class="carreau"><span class="glyphe jp">${c.k}</span></div>`;
-    extraire = x => x.on + " / " + x.kun;
-    rendreOpt = x => `<span class="jp" style="font-size:14px">音 ${esc(x.on)}<br>訓 ${esc(x.kun)}</span>`;
   } else { // mot
     if(!c.mots.length){ noter(4); return; }
     if(!session.motChoisi) session.motChoisi = alea(c.mots);
@@ -759,24 +761,88 @@ function exoQCM(c, t, tete){
   app.innerHTML = tete + question +
     `<div class="choix ${gros?"gros":""}">${options.map((o,i)=>
       `<button class="opt ${gros?"k":""}" data-i="${i}" data-bon="${o===c?1:0}">${rendreOpt(o)}</button>`).join("")}</div>
-     <div class="centre" style="margin-top:18px"><button class="b2" id="stop">Interrompre</button></div>`;
+     <div class="centre" style="margin-top:16px"><button class="b2" id="sais-pas">Je ne sais pas</button></div>
+     <div class="centre" style="margin-top:10px"><button class="b2" id="stop">Interrompre</button></div>`;
 
-  app.querySelectorAll(".opt").forEach(b=>b.onclick = ()=>{
-    const bon = b.dataset.bon === "1";
+  function devoiler(bon, cible){
     app.querySelectorAll(".opt").forEach(x=>{
       x.disabled = true;
       if(x.dataset.bon === "1") x.classList.add("juste");
     });
-    if(!bon) b.classList.add("faux");
+    if(cible && !bon) cible.classList.add("faux");
+    $("#sais-pas").disabled = true;
     session.reponse = bon;
     setTimeout(()=>{ session.revele = true; session.motChoisi = null; rendre(); }, bon ? 450 : 1100);
-  });
+  }
+  app.querySelectorAll(".opt").forEach(b=>b.onclick = ()=> devoiler(b.dataset.bon === "1", b));
+  $("#sais-pas").onclick = ()=> devoiler(false, null);
   $("#stop").onclick = terminer;
+}
+
+/* ---- lectures 音 et 訓 séparées : deux réponses à donner ----
+   Les deux listes sont indépendantes, donc impossible de déduire
+   l'une de l'autre. Le verdict n'apparaît qu'une fois les deux
+   choix faits, pour que le premier n'oriente pas le second.      */
+function exoLectures(c, tete){
+  const aOn  = c.on  && c.on  !== "—";
+  const aKun = c.kun && c.kun !== "—";
+  if(!aOn && !aKun){ noter(4); return; }        // rien à demander
+
+  const L = session.lect || (session.lect = {});
+  if(!L.pret){
+    L.optOn  = aOn  ? melanger([c, ...distracteurs(c, 3, x => x.on  !== "—" ? x.on  : "", c.on )]) : [];
+    L.optKun = aKun ? melanger([c, ...distracteurs(c, 3, x => x.kun !== "—" ? x.kun : "", c.kun)]) : [];
+    L.on = null; L.kun = null; L.pret = true;
+  }
+
+  const bloc = (cle, etiq, sous, opts, deux) => !opts.length ? "" : `
+    <div class="lect-bloc">
+      <div class="lect-tete"><b class="jp">${etiq}</b><span class="meta">${sous}</span></div>
+      <div class="choix ${deux ? "deux" : ""}">${opts.map((o,i)=>
+        `<button class="opt jp" data-cle="${cle}" data-i="${i}" data-bon="${o === c ? 1 : 0}">${esc(cle === "on" ? o.on : o.kun)}</button>`
+      ).join("")}</div>
+    </div>`;
+
+  app.innerHTML = tete +
+    `<div class="carreau" style="max-width:150px"><span class="glyphe jp" style="font-size:78px">${c.k}</span></div>
+     <div class="meta centre" style="margin:16px 0 2px">${aOn && aKun ? "Donnez les deux lectures" : "Donnez la lecture"}</div>
+     ${bloc("on",  "音", "lecture sino-japonaise", L.optOn,  true)}
+     ${bloc("kun", "訓", "lecture japonaise",      L.optKun, false)}
+     <div class="centre" style="margin-top:18px"><button class="b2" id="sais-pas">Je ne sais pas</button></div>
+     <div class="centre" style="margin-top:10px"><button class="b2" id="stop">Interrompre</button></div>`;
+
+  const complet = () => (!aOn || L.on !== null) && (!aKun || L.kun !== null);
+
+  function devoiler(abandon){
+    app.querySelectorAll(".opt").forEach(x=>{
+      x.disabled = true; x.classList.remove("choisi");
+      const choisi = +x.dataset.i === L[x.dataset.cle];
+      if(x.dataset.bon === "1") x.classList.add("juste");
+      else if(choisi) x.classList.add("faux");
+    });
+    $("#sais-pas").disabled = true;
+    const juste = !abandon
+      && (!aOn  || L.optOn [L.on ] === c)
+      && (!aKun || L.optKun[L.kun] === c);
+    session.reponse = juste;
+    setTimeout(()=>{ session.lect = null; session.revele = true; rendre(); }, juste ? 550 : 1300);
+  }
+
+  app.querySelectorAll(".opt").forEach(b=>b.onclick = ()=>{
+    const cle = b.dataset.cle;
+    L[cle] = +b.dataset.i;
+    app.querySelectorAll(`.opt[data-cle="${cle}"]`).forEach(x=>x.classList.remove("choisi"));
+    b.classList.add("choisi");
+    if(complet()) devoiler(false);
+  });
+  $("#sais-pas").onclick = ()=> devoiler(true);
+  $("#stop").onclick = ()=>{ session.lect = null; terminer(); };
 }
 
 /* ---- révélation + notation ---- */
 function revelation(c, tete){
   const bon = session.reponse;
+  const sug = bon === true ? 4 : bon === false ? 0 : -1;
   const p = n => planifier(S.fiches[c.k+"|"+session.file[session.i].t], n).interval;
   app.innerHTML = tete +
     `<div class="carreau"><span class="glyphe jp">${c.k}</span></div>
@@ -784,9 +850,9 @@ function revelation(c, tete){
      ${blocLectures(c)}${blocMots(c)}
      ${bon === false ? `<div class="note" style="border-color:var(--shu)">Réponse manquée. Choisissez « Encore » pour la revoir dans cette session.</div>` : ""}
      <div class="notes">
-       <button class="note-b encore" data-n="0">Encore<small>maintenant</small></button>
+       <button class="note-b encore ${sug===0?"suggere":""}" data-n="0">Encore<small>maintenant</small></button>
        <button class="note-b" data-n="3">Difficile<small>${p(3)} j</small></button>
-       <button class="note-b" data-n="4">Bien<small>${p(4)} j</small></button>
+       <button class="note-b ${sug===4?"suggere":""}" data-n="4">Bien<small>${p(4)} j</small></button>
        <button class="note-b" data-n="5">Facile<small>${p(5)} j</small></button>
      </div>
      <div class="centre" style="margin-top:16px"><button class="b2" id="stop">Interrompre</button></div>`;
@@ -897,9 +963,12 @@ function exoEcriture(c, tete){
        </svg>
      </div>
      <div id="verdict" class="verdict"></div>
-     <div class="rangee" style="justify-content:center;margin-top:12px">
+     <div class="rangee" style="justify-content:center;margin-top:12px" id="outils">
        <button class="b2" id="aide">Montrer le trait</button>
        <button class="b2" id="reprendre">Recommencer</button>
+     </div>
+     <div class="centre" style="margin-top:8px" id="outils2">
+       <button class="b2" id="sais-pas">Je ne sais pas — montrer le kanji</button>
      </div>
      <div id="apres"></div>
      <div class="centre" style="margin-top:14px"><button class="b2" id="stop">Interrompre</button></div>`;
@@ -988,7 +1057,7 @@ function exoEcriture(c, tete){
     if(v.ok){
       E.n++; E.echecs = 0; cacherIndice(); dessinerFaits(); majCompteur();
       message(E.n >= modele.length ? "" : "Trait correct.", E.n >= modele.length ? "" : "juste-txt");
-      if(E.n >= modele.length) terminerCaractere();
+      if(E.n >= modele.length) terminerCaractere(false);
       return;
     }
 
@@ -1011,15 +1080,49 @@ function exoEcriture(c, tete){
     if(E.echecs >= 2) animerIndice(modele[E.n]);   // au 2e échec, on montre
   }
 
-  function terminerCaractere(){
+  /* démonstration : les traits restants se dessinent dans l'ordre,
+     à une vitesse proportionnelle à leur longueur */
+  function animerTrait(i){
+    return new Promise(res=>{
+      const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+      p.setAttribute("class","fait"); p.setAttribute("d", modele[i]);
+      gFaits.appendChild(p);
+      const L = p.getTotalLength();
+      const calme = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const duree = calme ? 0 : Math.max(0.25, Math.min(0.9, L/55));
+      p.style.strokeDasharray = L; p.style.strokeDashoffset = L;
+      p.getBoundingClientRect();
+      p.style.transition = `stroke-dashoffset ${duree}s linear`;
+      p.style.strokeDashoffset = 0;
+      setTimeout(res, duree*1000 + 130);
+    });
+  }
+  async function demontrer(){
+    if(E.demo) return;
+    E.demo = true;
     cacherIndice();
-    const note = E.erreurs === 0 ? 4 : E.erreurs <= 2 ? 3 : 0;
+    $("#aide").disabled = $("#reprendre").disabled = $("#sais-pas").disabled = true;
+    message(`Ordre des traits — regardez.`, "");
+    for(let i = E.n; i < modele.length; i++){
+      if(!document.contains(svg)) return;    // l'utilisateur a quitté l'écran
+      await animerTrait(i);
+    }
+    if(!document.contains(svg)) return;
+    E.n = modele.length; majCompteur();
+    terminerCaractere(true);
+  }
+
+  function terminerCaractere(abandon){
+    cacherIndice();
+    const note = abandon ? 0 : E.erreurs === 0 ? 4 : E.erreurs <= 2 ? 3 : 0;
     const p = n => planifier(S.fiches[c.k+"|ecriture"], n).interval;
-    message(E.erreurs === 0
-      ? `Caractère complet, ${modele.length} traits sans erreur.`
-      : `Caractère complet — ${E.erreurs} erreur${E.erreurs>1?"s":""}.`,
-      E.erreurs === 0 ? "juste-txt" : "");
-    $("#aide").style.display = $("#reprendre").style.display = "none";
+    message(abandon
+      ? `${modele.length} traits. La carte revient dans cette session.`
+      : E.erreurs === 0
+        ? `Caractère complet, ${modele.length} traits sans erreur.`
+        : `Caractère complet — ${E.erreurs} erreur${E.erreurs>1?"s":""}.`,
+      abandon ? "" : E.erreurs === 0 ? "juste-txt" : "");
+    $("#outils").style.display = $("#outils2").style.display = "none";
     $("#apres").innerHTML = `<div class="notes">
         <button class="note-b encore ${note===0?"suggere":""}" data-n="0">Encore<small>maintenant</small></button>
         <button class="note-b ${note===3?"suggere":""}" data-n="3">Difficile<small>${p(3)} j</small></button>
@@ -1041,6 +1144,7 @@ function exoEcriture(c, tete){
     session.ecr = {n:0, erreurs:E.erreurs, echecs:0, aide:E.aide};
     rendre();
   };
+  $("#sais-pas").onclick = demontrer;
   $("#stop").onclick = ()=>{ session.ecr = null; terminer(); };
 }
 
@@ -1057,7 +1161,8 @@ function exoEcritureLibre(c, tete){
        <button class="b2" id="effacer">Effacer</button>
      </div>
      <div style="margin-top:18px"><button class="b1" id="verif">Vérifier</button></div>
-     <div class="centre" style="margin-top:12px"><button class="b2" id="stop">Interrompre</button></div>`;
+     <div class="centre" style="margin-top:10px"><button class="b2" id="sais-pas">Je ne sais pas</button></div>
+     <div class="centre" style="margin-top:10px"><button class="b2" id="stop">Interrompre</button></div>`;
 
   const svg = $("#tableau"), br = $("#brouillon"), gf = $("#faits");
   let trace = false, pts = [], faits = [];
@@ -1074,6 +1179,7 @@ function exoEcritureLibre(c, tete){
 
   $("#effacer").onclick = ()=>{ faits=[]; pts=[]; br.removeAttribute("points"); redessiner(); };
   $("#verif").onclick = ()=>{ session.reponse = null; session.revele = true; rendre(); };
+  $("#sais-pas").onclick = ()=>{ session.reponse = false; session.revele = true; rendre(); };
   $("#stop").onclick = terminer;
 }
 
