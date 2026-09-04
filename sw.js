@@ -1,7 +1,19 @@
-/* Service worker — met l'application en cache pour un fonctionnement hors ligne.
-   Changez VERSION à chaque modification d'index.html pour forcer la mise à jour. */
+/* Service worker.
 
-const VERSION = "kanji-n5-v4";
+   Stratégie : cache d'abord, revalidation en arrière-plan.
+   Le lancement est instantané et fonctionne hors ligne, et l'application
+   se met à jour toute seule dès qu'un fichier change sur le serveur.
+
+   Comment : à chaque requête, la réponse du cache part immédiatement, mais
+   la requête réseau continue en parallèle. Si l'ETag renvoyé par le serveur
+   diffère de celui du fichier en cache, le cache est remplacé et la page
+   est prévenue — elle se recharge alors d'elle-même.
+
+   VERSION ne sert plus qu'à nommer le cache. Vous n'avez plus besoin de la
+   changer à chaque modification : la changer force simplement un vidage
+   complet, utile en cas de problème. */
+
+const VERSION = "kanji-n5-v5";
 const FICHIERS = [
   "./",
   "./index.html",
@@ -12,6 +24,13 @@ const FICHIERS = [
   "./icone-maskable.png",
   "./apple-touch-icon.png"
 ];
+
+/* Seuls ces fichiers déclenchent un rechargement quand ils changent :
+   inutile de recharger la page parce qu'une icône a été retouchée. */
+const SURVEILLES = /(^|\/)(index\.html|traces\.js)?$/;
+
+const signature = r =>
+  r.headers.get("etag") || r.headers.get("last-modified") || r.headers.get("content-length") || "";
 
 self.addEventListener("install", e => {
   e.waitUntil(
@@ -31,18 +50,34 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request).then(cache => {
-      const reseau = fetch(e.request)
-        .then(rep => {
-          if (rep && rep.status === 200 && rep.type === "basic") {
-            const copie = rep.clone();
-            caches.open(VERSION).then(c => c.put(e.request, copie));
-          }
-          return rep;
-        })
-        .catch(() => cache);
-      return cache || reseau;
-    })
-  );
+  if (new URL(e.request.url).origin !== self.location.origin) return;
+
+  e.respondWith((async () => {
+    const cache = await caches.open(VERSION);
+    const enCache = await cache.match(e.request);
+
+    const reseau = fetch(e.request)
+      .then(async rep => {
+        if (rep && rep.ok && rep.type === "basic") {
+          const change = enCache && signature(enCache) !== signature(rep);
+          await cache.put(e.request, rep.clone());
+          if (change && SURVEILLES.test(new URL(e.request.url).pathname)) await prevenir();
+        }
+        return rep;
+      })
+      .catch(() => enCache);
+
+    e.waitUntil(reseau);            // garde le worker en vie le temps de la mise en cache
+    return enCache || reseau;
+  })());
+});
+
+async function prevenir() {
+  const fenetres = await self.clients.matchAll({ type: "window" });
+  fenetres.forEach(f => f.postMessage({ type: "maj" }));
+}
+
+/* Permet à la page de forcer l'activation immédiate si besoin. */
+self.addEventListener("message", e => {
+  if (e.data && e.data.type === "activer") self.skipWaiting();
 });
