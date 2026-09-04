@@ -161,8 +161,24 @@ Après chaque carte, quatre notes :
 
 Une carte est comptée « acquise » au-delà de 21 jours d'intervalle.
 
-Le nombre de nouveaux kanji introduits par session se règle dans les réglages
-(10 par défaut, 0 pour ne faire que des révisions).
+### Composition d'une session
+
+Une session n'est jamais faite que de nouveautés. Elle contient :
+
+1. **Toutes les cartes arrivées à échéance**, mélangées, en premier — ce sont
+   des kanji déjà vus dont l'intervalle est écoulé. Ce lot n'est pas plafonné :
+   après une semaine d'absence, tout ce qui est dû revient d'un coup.
+2. **Puis les kanji neufs**, dans la limite du quota réglé (10 par défaut,
+   0 pour ne faire que des révisions).
+
+Le quota se compte en **kanji, pas en cartes**. Un kanji neuf apporte autant de
+cartes qu'il y a d'exercices activés : avec les 5 exercices, un quota de 10
+introduit 10 kanji, soit jusqu'à 50 cartes. Les réglages affichent l'équivalent
+en cartes sous le champ.
+
+Les kanji déjà entamés à qui il manque un exercice — parce que vous avez activé
+un nouveau type en cours de route — passent avant les kanji entièrement neufs.
+On termine ce qui est commencé avant d'ouvrir autre chose.
 
 ### Sauvegarde
 
@@ -233,6 +249,14 @@ cache — gardez ça pour les cas de blocage.
 Le numéro affiché en bas de l'écran Réglages vient de `VERSION_APP` dans
 `index.html`. Purement indicatif, mais pratique pour vérifier d'un coup d'œil
 ce qui tourne réellement sur le téléphone.
+
+Ne confondez pas les deux constantes, elles vivent dans des fichiers différents
+et n'ont plus rien à voir l'une avec l'autre :
+
+| Constante | Fichier | Rôle |
+|---|---|---|
+| `VERSION_APP` | `index.html` | étiquette affichée, aucun effet technique |
+| `VERSION` | `sw.js` | nom du cache ; la changer force un vidage complet |
 
 En cas de blocage réel (un `sw.js` cassé mis en ligne, par exemple) :
 exportez votre progression, supprimez l'icône de l'écran d'accueil, videz les
