@@ -1,7 +1,7 @@
 /* Service worker — met l'application en cache pour un fonctionnement hors ligne.
    Changez VERSION à chaque modification d'index.html pour forcer la mise à jour. */
 
-const VERSION = "kanji-n5-v2";
+const VERSION = "kanji-n5-v4";
 const FICHIERS = [
   "./",
   "./index.html",
